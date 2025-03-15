@@ -16,16 +16,56 @@ export const useGameStore = create((set, get) => ({
   // 初始化游戏状态监听
   initializeListeners: (roomId) => {
     // 监听游戏状态更新
-    websocketService.addListener('GAME_STATE_UPDATE', (data) => {
+    websocketService.addListener('GAME_STATE', (data) => {
+      console.log('Processing GAME_STATE in store:', data);
+      
+      // 处理可能的不同数据结构
+      const gameState = data.gameState || data;
+      const playerHand = data.hand || data.playerHand || [];
+      const revealedTiles = data.revealedTiles || {};
+      const discardPile = data.discardPile || [];
+      const drawPileCount = data.remainingTiles || data.drawPileCount || 0;
+      const recentActions = data.recentActions || [];
+      
+      console.log('Setting game state:', { 
+        gameState, playerHand, revealedTiles, discardPile, drawPileCount, recentActions 
+      });
+      
+      set({
+        gameState,
+        playerHand,
+        revealedTiles,
+        discardPile,
+        drawPileCount,
+        recentActions,
+        loading: false,
+        error: null
+      });
+    });
+
+    // 添加ACTION消息监听器
+    websocketService.addListener('ACTION', (data) => {
+      console.log('Processing ACTION message:', data);
+      
       if (data.roomId === roomId) {
-        set({
-          gameState: data.gameState,
-          playerHand: data.playerHand || [],
-          revealedTiles: data.revealedTiles || {},
-          discardPile: data.discardPile || [],
-          drawPileCount: data.drawPileCount || 0,
-          recentActions: data.recentActions || [],
-        });
+        // 将ACTION添加到最近的操作列表中
+        const newAction = {
+          type: data.gameData.type,
+          playerEmail: data.gameData.playerEmail,
+          data: data.gameData.tile || data.gameData.data,
+          timestamp: data.timestamp
+        };
+        
+        const currentActions = [...get().recentActions];
+        currentActions.push(newAction);
+        
+        // 只保留最近的10个操作
+        const recentActions = currentActions.slice(Math.max(0, currentActions.length - 10));
+        
+        set({ recentActions });
+        
+        // 自动触发获取游戏状态，确保UI更新
+        get().fetchGameState(roomId);
       }
     });
 
@@ -49,13 +89,29 @@ export const useGameStore = create((set, get) => ({
         });
       }
     });
+    
+    // 监听错误消息
+    websocketService.addListener('ERROR', (data) => {
+      console.log('Received ERROR message:', data);
+      
+      // 处理游戏状态获取失败
+      if (data.code === 'STATE_FAILED') {
+        set({ 
+          loading: false, 
+          error: data.message || '获取游戏状态失败' 
+        });
+      }
+    });
   },
 
   // 移除游戏状态监听
   removeListeners: () => {
-    websocketService.removeListener('GAME_STATE_UPDATE');
+    console.log('Removing listeners');
+    websocketService.removeListener('GAME_STATE');
+    websocketService.removeListener('ACTION');
     websocketService.removeListener('WIN_CLAIM');
     websocketService.removeListener('GAME_ENDED');
+    websocketService.removeListener('ERROR');
   },
 
   // 获取游戏状态
@@ -63,12 +119,46 @@ export const useGameStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       await websocketService.getGameState(roomId);
-      set({ loading: false });
+      
+      // 添加重试机制，如果3秒后仍然没有接收到游戏状态，再次尝试
+      const currentState = get().gameState;
+      
+      return new Promise((resolve) => {
+        if (currentState && currentState.roomId === roomId) {
+          // 如果已经有状态了，直接返回
+          set({ loading: false });
+          resolve(currentState);
+        } else {
+          // 否则设置超时再次尝试
+          const timeout = setTimeout(async () => {
+            const newState = get().gameState;
+            if (!newState || newState.roomId !== roomId) {
+              console.log('No game state received after timeout, retrying...');
+              await websocketService.getGameState(roomId);
+            }
+            set({ loading: false });
+            resolve(get().gameState);
+          }, 3000);
+          
+          // 添加一次性监听器，如果收到状态更新则清除超时
+          const listener = (data) => {
+            if (data && data.roomId === roomId) {
+              clearTimeout(timeout);
+              websocketService.removeListener('GAME_STATE', listener);
+              set({ loading: false });
+              resolve(data);
+            }
+          };
+          
+          websocketService.addListener('GAME_STATE', listener);
+        }
+      });
     } catch (error) {
       set({ 
         loading: false, 
         error: error.message,
       });
+      throw error;
     }
   },
 

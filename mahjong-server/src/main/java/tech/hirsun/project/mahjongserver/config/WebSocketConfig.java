@@ -27,6 +27,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(webSocketController, websocketEndpoint)
                 .addInterceptors(handshakeInterceptor)
-                .withSockJS();  // 添加SockJS支持，提高兼容性
+                .setAllowedOrigins("*");  // 允许所有源，或者指定"http://localhost:5173"
     }
 } 

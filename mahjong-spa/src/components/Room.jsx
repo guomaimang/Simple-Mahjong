@@ -58,7 +58,7 @@ const Room = () => {
       // 添加房间状态更新监听器
       websocketService.addListener('ROOM_STATE_UPDATE', (data) => {
         if (data.roomId === roomId) {
-          if (data.room.status === 'PLAYING') {
+          if (data.status === 'PLAYING') {
             navigate(`/rooms/${roomId}/game`);
           }
         }

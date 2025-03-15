@@ -425,11 +425,32 @@ public class GameService {
      */
     public Map<String, Object> getGameState(String roomId, String userEmail) {
         Room room = roomRepository.findById(roomId);
-        if (room == null || room.getCurrentGame() == null || !room.getPlayerEmails().contains(userEmail)) {
+        if (room == null) {
+            System.out.println("GameService.getGameState: Room not found: " + roomId);
             return Map.of();
         }
         
+        if (!room.getPlayerEmails().contains(userEmail)) {
+            System.out.println("GameService.getGameState: User not in room: " + userEmail);
+            return Map.of();
+        }
+        
+        // 处理房间状态为PLAYING但游戏实例为null的情况
+        if (room.getStatus() == Room.RoomStatus.PLAYING && room.getCurrentGame() == null) {
+            System.out.println("GameService.getGameState: Room status is PLAYING but game is null, initializing game");
+            Game game = initializeGame(roomId);
+            if (game == null) {
+                System.out.println("GameService.getGameState: Failed to initialize game");
+                return Map.of();
+            }
+        }
+        
         Game game = room.getCurrentGame();
+        if (game == null) {
+            System.out.println("GameService.getGameState: Game is null");
+            return Map.of();
+        }
+        
         Map<String, Object> state = new HashMap<>();
         
         // Basic game info
@@ -459,6 +480,7 @@ public class GameService {
             state.put("isDraw", game.getWinnerEmail() == null);
         }
         
+        System.out.println("GameService.getGameState: Returning state for user: " + userEmail);
         return state;
     }
 } 

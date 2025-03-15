@@ -37,6 +37,8 @@ const Game = () => {
   const [selectedTiles, setSelectedTiles] = useState([]);
   const [actionType, setActionType] = useState(null);
   const [showWinConfirmation, setShowWinConfirmation] = useState(false);
+  const [draggedTileIndex, setDraggedTileIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
   // 初始化游戏
   useEffect(() => {
@@ -53,6 +55,16 @@ const Game = () => {
         
         // 获取游戏状态
         await fetchGameState(roomId);
+        
+        // 添加重试逻辑，如果5秒后仍然没有游戏状态，再次尝试
+        const retryTimeout = setTimeout(async () => {
+          if (!gameState) {
+            console.log('No game state received, retrying...');
+            await fetchGameState(roomId);
+          }
+        }, 5000);
+        
+        return () => clearTimeout(retryTimeout);
       } catch (error) {
         console.error('Failed to initialize game:', error);
       }
@@ -65,7 +77,7 @@ const Game = () => {
       removeListeners();
       resetGameState();
     };
-  }, [roomId, fetchRoom, initializeListeners, removeListeners, fetchGameState, resetGameState]);
+  }, [roomId, fetchRoom, initializeListeners, removeListeners, fetchGameState, resetGameState, gameState]);
 
   // 监听胜利声明
   useEffect(() => {
@@ -213,6 +225,48 @@ const Game = () => {
 
   // 渲染玩家手牌
   const renderPlayerHand = () => {
+    const handleDragStart = (e, index) => {
+      e.dataTransfer.setData('text/plain', index);
+      setDraggedTileIndex(index);
+      setTimeout(() => {
+        e.target.classList.add('dragging');
+      }, 0);
+    };
+
+    const handleDragEnd = (e) => {
+      e.target.classList.remove('dragging');
+      setDraggedTileIndex(null);
+      setDragOverIndex(null);
+    };
+
+    const handleDragOver = (e, index) => {
+      e.preventDefault();
+      setDragOverIndex(index);
+    };
+
+    const handleDragLeave = (e) => {
+      e.preventDefault();
+    };
+
+    const handleDrop = (e, dropIndex) => {
+      e.preventDefault();
+      const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+      if (dragIndex === dropIndex) return;
+
+      // 创建新数组并改变其中元素的顺序
+      const newHand = [...playerHand];
+      const [draggedTile] = newHand.splice(dragIndex, 1);
+      newHand.splice(dropIndex, 0, draggedTile);
+      
+      // 使用store中现有的方法更新playerHand
+      // 看起来store中直接使用set方法来更新状态
+      useGameStore.setState({ playerHand: newHand });
+      
+      // 重置状态
+      setDraggedTileIndex(null);
+      setDragOverIndex(null);
+    };
+
     return (
       <div className="player-hand">
         <div className="hand-title">
@@ -220,11 +274,19 @@ const Game = () => {
           <button onClick={sortPlayerHand}>排序</button>
         </div>
         <div className="tiles-container">
-          {playerHand.map((tile) => (
+          {playerHand.map((tile, index) => (
             <div 
               key={tile.id} 
-              className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
+              className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
+                ${draggedTileIndex === index ? 'dragging' : ''} 
+                ${dragOverIndex === index ? 'drag-over' : ''}`}
               onClick={() => actionType === 'discard' ? handleTileSelect(tile) : null}
+              draggable={true}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
             >
               {getTileDisplayName(tile)}
             </div>

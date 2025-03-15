@@ -248,6 +248,25 @@
   background-color: #e8f5e9;
 }
 
+/* 拖拽相关样式 */
+.tile[draggable="true"] {
+  cursor: grab;
+}
+
+.tile[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.tile.dragging {
+  opacity: 0.5;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.tile.drag-over {
+  border: 2px dashed #2196f3;
+  background-color: #e3f2fd;
+}
+
 .tile.hidden {
   background-color: #2196f3;
   color: white;

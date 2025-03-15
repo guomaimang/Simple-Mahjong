@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import tech.hirsun.project.mahjongserver.model.Game;
 import tech.hirsun.project.mahjongserver.model.Room;
 import tech.hirsun.project.mahjongserver.model.Tile;
+import tech.hirsun.project.mahjongserver.repository.RoomRepository;
 import tech.hirsun.project.mahjongserver.repository.SessionRepository;
 import tech.hirsun.project.mahjongserver.service.GameService;
 import tech.hirsun.project.mahjongserver.service.RoomService;
@@ -30,6 +31,9 @@ public class WebSocketController extends TextWebSocketHandler {
 
     @Autowired
     private SessionRepository sessionRepository;
+
+    @Autowired
+    private RoomRepository roomRepository;
 
     @Autowired
     private RoomService roomService;
@@ -173,27 +177,60 @@ public class WebSocketController extends TextWebSocketHandler {
     private void handleStartGame(String userEmail, JsonNode data) {
         String roomId = data.get("roomId").asText();
         
+        LOGGER.info("Handling START_GAME request for room: " + roomId + " from user: " + userEmail);
+        
         // Check if user is the room creator
         Room room = roomService.getRoomById(roomId);
-        if (room == null || !room.getCreatorEmail().equals(userEmail)) {
+        if (room == null) {
+            LOGGER.warning("Room not found: " + roomId);
+            webSocketService.sendErrorMessage(userEmail, "ROOM_NOT_FOUND", "Room not found");
+            return;
+        }
+        
+        if (!room.getCreatorEmail().equals(userEmail)) {
+            LOGGER.warning("User " + userEmail + " is not the creator of room " + roomId);
             webSocketService.sendErrorMessage(userEmail, "NOT_CREATOR", "Only the room creator can start the game");
             return;
         }
         
         // Check if game can be started
+        if (room.getStatus() == Room.RoomStatus.PLAYING) {
+            LOGGER.warning("Game is already in progress in room " + roomId);
+            
+            // 如果游戏已经在进行中，直接发送当前游戏状态
+            if (room.getCurrentGame() != null) {
+                LOGGER.info("Game already in progress, sending game state");
+                // 向所有玩家发送游戏状态
+                for (String playerEmail : room.getPlayerEmails()) {
+                    Map<String, Object> gameState = gameService.getGameState(roomId, playerEmail);
+                    webSocketService.sendMessage(playerEmail, "GAME_STATE", gameState);
+                }
+                return;
+            } else {
+                // 如果状态是PLAYING但游戏实例为null，重置房间状态
+                LOGGER.info("Room status is PLAYING but game is null, resetting room status");
+                room.setStatus(Room.RoomStatus.WAITING);
+                roomRepository.save(room);
+            }
+        }
+        
         if (!room.canStartGame()) {
+            LOGGER.warning("Cannot start game in room " + roomId + ". Need at least 2 players and room must be in waiting state");
             webSocketService.sendErrorMessage(userEmail, "CANNOT_START", "Cannot start game. Need at least 2 players and room must be in waiting state");
             return;
         }
         
         // Initialize game
+        LOGGER.info("Initializing game in room " + roomId);
         Game game = gameService.initializeGame(roomId);
         if (game == null) {
+            LOGGER.severe("Failed to initialize game in room " + roomId);
             webSocketService.sendErrorMessage(userEmail, "GAME_INIT_FAILED", "Failed to initialize game");
             return;
         }
         
         // Notify all players
+        LOGGER.info("Game started in room " + roomId + " with dealer: " + game.getDealerEmail());
         webSocketService.sendGameMessage(roomId, "GAME_STARTED", Map.of(
             "dealerEmail", game.getDealerEmail(),
             "playerCount", room.getPlayerEmails().size()
@@ -202,6 +239,9 @@ public class WebSocketController extends TextWebSocketHandler {
         // Send game state to each player
         for (String playerEmail : room.getPlayerEmails()) {
             Map<String, Object> gameState = gameService.getGameState(roomId, playerEmail);
+            if (gameState.isEmpty()) {
+                LOGGER.warning("Empty game state for user " + playerEmail + " in room " + roomId);
+            }
             webSocketService.sendMessage(playerEmail, "GAME_STATE", gameState);
         }
     }
@@ -414,6 +454,11 @@ public class WebSocketController extends TextWebSocketHandler {
         if (gameState.isEmpty()) {
             webSocketService.sendErrorMessage(userEmail, "STATE_FAILED", "Failed to get game state");
             return;
+        }
+        
+        // 确保包含房间ID
+        if (!gameState.containsKey("roomId")) {
+            gameState.put("roomId", roomId);
         }
         
         // Send game state to the player

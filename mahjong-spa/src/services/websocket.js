@@ -32,6 +32,20 @@ class WebSocketService {
           return;
         }
 
+        // 添加CONNECTED消息类型的监听器
+        this.addListener('CONNECTED', (data) => {
+          console.log('Received CONNECTED message:', data);
+          
+          // 如果当前在游戏中，且URL包含房间ID，自动重新获取游戏状态
+          const path = window.location.pathname;
+          const match = path.match(/\/games\/(\d+)/);
+          if (match && match[1]) {
+            const roomId = match[1];
+            console.log('Automatically requesting game state for room:', roomId);
+            this.getGameState(roomId);
+          }
+        });
+
         this.socket = new WebSocket(`${WS_URL}?token=${token}`);
 
         this.socket.onopen = () => {
@@ -65,11 +79,22 @@ class WebSocketService {
 
         this.socket.onmessage = (event) => {
           try {
+            console.log(`Received WebSocket message: ${event.data}`);
             const message = JSON.parse(event.data);
             const { type, data } = message;
             
+            console.log(`Processing message of type: ${type}`);
+            
+            // 处理错误消息的特殊处理
+            if (type === 'ERROR' && !this.listeners.has(type)) {
+              console.warn(`No listeners registered for ERROR message:`, data);
+              // 自动注册一个默认的错误监听器以显示错误
+              this.addDefaultErrorListener();
+            }
+            
             // 调用相应的监听器处理消息
             if (this.listeners.has(type)) {
+              console.log(`Found ${this.listeners.get(type).length} listeners for type: ${type}`);
               this.listeners.get(type).forEach(callback => {
                 try {
                   callback(data);
@@ -77,6 +102,8 @@ class WebSocketService {
                   console.error(`Error in ${type} listener:`, err);
                 }
               });
+            } else {
+              console.log(`No listeners found for message type: ${type}`);
             }
             
             // 处理系统消息
@@ -117,8 +144,11 @@ class WebSocketService {
     try {
       const socket = await this.connect();
       if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type, data }));
+        const message = JSON.stringify({ type, data });
+        console.log(`Sending WebSocket message: ${message}`);
+        socket.send(message);
       } else {
+        console.error(`WebSocket not open. Current state: ${socket.readyState}`);
         throw new Error('WebSocket is not open');
       }
     } catch (err) {
@@ -129,6 +159,7 @@ class WebSocketService {
 
   // 添加消息类型的监听器
   addListener(type, callback) {
+    console.log(`Adding listener for message type: ${type}`);
     if (!this.listeners.has(type)) {
       this.listeners.set(type, []);
     }
@@ -186,6 +217,15 @@ class WebSocketService {
 
   getGameState(roomId) {
     return this.send('GET_GAME_STATE', { roomId });
+  }
+
+  // 添加默认的错误消息监听器
+  addDefaultErrorListener() {
+    console.log('Adding default ERROR listener');
+    this.addListener('ERROR', (data) => {
+      console.warn(`Default error handler: ${data.code} - ${data.message}`);
+      // 这里可以添加全局错误处理逻辑，如显示toast提示等
+    });
   }
 }
 
