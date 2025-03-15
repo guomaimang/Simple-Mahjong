@@ -613,6 +613,7 @@ const Game = () => {
                      action.type === 'DISCARD' ? '打出' :
                      action.type === 'TAKE_TILE' ? '拿取' :
                      action.type === 'REVEAL_TILES' ? '明牌' :
+                     action.type === 'HIDE_TILES' ? '暗牌' :
                      action.type === 'CLAIM_WIN' ? '宣布胜利' :
                      action.type === 'CONFIRM_WIN' ? '确认胜利' :
                      action.type === 'DENY_WIN' ? '拒绝胜利' :

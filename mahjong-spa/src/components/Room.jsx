@@ -53,23 +53,51 @@ const Room = () => {
       websocketService.addListener('SYSTEM_NOTIFICATION', (data) => {
         if (data.roomId === roomId) {
           setSystemMessages(prev => [...prev, data.message]);
+          
+          // 如果系统消息表明游戏已开始，自动进入游戏
+          if (data.message.includes('游戏已开始') || data.message.includes('游戏开始')) {
+            console.log('系统消息表明游戏已开始，准备跳转...');
+            navigate(`/rooms/${roomId}/game`);
+          }
         }
       });
 
       // 添加房间状态更新监听器
       websocketService.addListener('ROOM_STATE_UPDATE', (data) => {
         if (data.roomId === roomId) {
+          console.log('收到房间状态更新:', data);
+          // 立即获取最新房间状态
+          fetchRoom(roomId);
+          
           if (data.status === 'PLAYING') {
+            console.log('收到状态更新：游戏已开始，正在进入游戏...');
             navigate(`/rooms/${roomId}/game`);
           }
         }
       });
+      
+      // 添加游戏状态监听器
+      websocketService.addListener('GAME_STATE', (data) => {
+        if (data.roomId === roomId) {
+          console.log('收到游戏状态更新，正在进入游戏...');
+          navigate(`/rooms/${roomId}/game`);
+        }
+      });
     });
 
-    // 设置自动刷新定时器 - 每5秒刷新一次玩家列表
-    refreshTimerRef.current = setInterval(() => {
+    // 设置自动刷新定时器 - 每5秒刷新一次房间状态
+    refreshTimerRef.current = setInterval(async () => {
       if (hasJoined) {
-        fetchRoom(roomId);
+        try {
+          const response = await fetchRoom(roomId);
+          // 如果房间状态是PLAYING，直接跳转到游戏页面
+          if (response && response.room && response.room.status === 'PLAYING') {
+            console.log('游戏已开始，正在进入游戏页面...');
+            navigate(`/rooms/${roomId}/game`);
+          }
+        } catch (error) {
+          console.error('Failed to refresh room:', error);
+        }
       }
     }, 5000);
 
@@ -81,6 +109,7 @@ const Room = () => {
       // 清理监听器
       websocketService.removeListener('SYSTEM_NOTIFICATION');
       websocketService.removeListener('ROOM_STATE_UPDATE');
+      websocketService.removeListener('GAME_STATE');
       leaveCurrentRoom();
     };
   }, [roomId, fetchRoom, user, navigate, leaveCurrentRoom, hasJoined]);
@@ -89,8 +118,17 @@ const Room = () => {
   useEffect(() => {
     // 如果玩家已加入，确保定时器正在运行
     if (hasJoined && !refreshTimerRef.current) {
-      refreshTimerRef.current = setInterval(() => {
-        fetchRoom(roomId);
+      refreshTimerRef.current = setInterval(async () => {
+        try {
+          const response = await fetchRoom(roomId);
+          // 如果房间状态是PLAYING，直接跳转到游戏页面
+          if (response && response.room && response.room.status === 'PLAYING') {
+            console.log('游戏已开始，正在进入游戏页面...');
+            navigate(`/rooms/${roomId}/game`);
+          }
+        } catch (error) {
+          console.error('Failed to refresh room:', error);
+        }
       }, 5000);
     }
     
@@ -101,7 +139,7 @@ const Room = () => {
         refreshTimerRef.current = null;
       }
     };
-  }, [hasJoined, roomId, fetchRoom]);
+  }, [hasJoined, roomId, fetchRoom, navigate]);
 
   const handleJoinRoom = async () => {
     if (!password) {
