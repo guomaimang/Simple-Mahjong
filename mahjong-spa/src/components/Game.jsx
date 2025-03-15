@@ -247,10 +247,10 @@ const Game = () => {
     const playerCount = Object.keys(gameState?.playerPositions || {}).length;
     
     if (playerCount === 2) {
-      // 两人游戏：另一个人是对家
+      // 两人游戏：另一个人是对家（不管位置在哪）
       return "对家";
     } else if (playerCount === 3) {
-      // 三人游戏：1是上家，2是下家
+      // 三人游戏：1是上家，3是下家（因为位置2被跳过了）
       return relativePosition === 1 ? "上家" : "下家";
     } else if (playerCount === 4) {
       // 四人游戏：1是上家，2是对家，3是下家
@@ -298,6 +298,315 @@ const Game = () => {
     }
     
     return name;
+  };
+
+  // 渲染单个玩家区域
+  const renderPlayerArea = (playerEmail, position, relationship) => {
+    const playerRevealedTiles = revealedTiles[playerEmail] || [];
+    const playerHandCount = playerHandCounts[playerEmail] || 0;
+    const badgeClass = relationship === "上家" ? "shangjiabadge" : 
+                       relationship === "下家" ? "xiajiabadge" : "duijiabadge";
+    
+    return (
+      <div key={position} className={`player-area position-${position}`}>
+        <div className="player-info">
+          {getPlayerDisplayName(playerEmail)}
+          {playerEmail === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
+          <span className={`relationship-badge ${badgeClass}`}>{relationship}</span>
+        </div>
+        <div className="player-tiles">
+          {playerRevealedTiles.map((tile, idx) => (
+            <div key={idx} className="tile revealed">
+              {getTileDisplayName(tile)}
+            </div>
+          ))}
+          {Array.from({ length: playerHandCount }).map((_, idx) => (
+            <div key={`hidden-${idx}`} className="tile hidden">
+              ?
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染其他玩家的牌
+  const renderOtherPlayers = () => {
+    if (!gameState || !players.length) return null;
+
+    // 获取玩家总人数
+    const playerCount = Object.keys(gameState.playerPositions || {}).length;
+    
+    // 获取所有玩家的位置信息
+    const positions = Object.entries(gameState.playerPositions || {});
+    
+    // 获取除了当前玩家以外的其他玩家
+    const otherPlayers = positions.filter(([email, _]) => email !== user.email);
+
+    // 如果只有一个玩家（即当前用户），不渲染其他玩家区域
+    if (otherPlayers.length === 0) {
+      return <div className="other-players-empty">等待其他玩家加入...</div>;
+    }
+    
+    // 根据玩家人数确定要使用的CSS类
+    const otherPlayersClass = `other-players other-players-${playerCount}`;
+    
+    // 根据玩家人数渲染不同的布局
+    if (playerCount === 2) {
+      // 2人游戏：对家放在中间位置
+      const [playerEmail, _] = otherPlayers[0];
+      return (
+        <div className={otherPlayersClass}>
+          {renderPlayerArea(playerEmail, 2, "对家")}
+        </div>
+      );
+    } else if (playerCount === 3) {
+      // 3人游戏：按照相对位置渲染
+      return (
+        <div className={otherPlayersClass}>
+          {otherPlayers.map(([email, pos]) => {
+            const relPos = getRelativePosition(pos);
+            // 只渲染位置1和3
+            if (relPos === 1) {
+              return renderPlayerArea(email, 1, "上家");
+            } else if (relPos === 3) {
+              return renderPlayerArea(email, 3, "下家");
+            }
+            return null;
+          })}
+        </div>
+      );
+    } else {
+      // 4人游戏：按照相对位置渲染
+      return (
+        <div className={otherPlayersClass}>
+          {otherPlayers.map(([email, pos]) => {
+            const relPos = getRelativePosition(pos);
+            if (relPos === 1) {
+              return renderPlayerArea(email, 1, "上家");
+            } else if (relPos === 2) {
+              return renderPlayerArea(email, 2, "对家");
+            } else if (relPos === 3) {
+              return renderPlayerArea(email, 3, "下家");
+            }
+            return null;
+          })}
+        </div>
+      );
+    }
+  };
+
+  // 渲染牌桌中央区域
+  const renderTableCenter = () => {
+    return (
+      <div className="table-center">
+        <div className="draw-pile">
+          <div className="pile-info">
+            <span>牌库剩余: {drawPileCount}</span>
+            <div className="draw-buttons">
+              <button onClick={() => handleDrawTiles(1)}>抽1张</button>
+              <button onClick={() => handleDrawTiles(3)}>抽3张</button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="discard-pile">
+          <h3>弃牌区</h3>
+          <div className="tiles-container">
+            {discardPile.map((tile, idx) => (
+              <div 
+                key={idx} 
+                className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
+                onClick={() => actionType === 'take' ? handleTileSelect(tile) : null}
+              >
+                {getTileDisplayName(tile)}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="recent-actions">
+          <h3>最近操作</h3>
+          <div className="actions-list">
+            {recentActions.slice().reverse().map((action, idx) => {
+              // 获取操作玩家的相对位置和关系标识
+              const playerPos = getPlayerPosition(action.playerEmail);
+              const relativePos = getRelativePosition(playerPos);
+              
+              // 如果是用户自己，显示"你自己"
+              // 如果是2人游戏且不是自己，显示"对家"
+              // 否则根据相对位置获取关系
+              let relationship = "";
+              if (user.email === action.playerEmail) {
+                relationship = "你自己";
+              } else if (Object.keys(gameState?.playerPositions || {}).length === 2) {
+                relationship = "对家";
+              } else {
+                relationship = getPlayerRelationship(relativePos);
+              }
+              
+              return (
+                <div key={idx} className="action-item">
+                  <span className="action-player">
+                    {getPlayerDisplayName(action.playerEmail)}
+                    {relationship && <span className="relationship-text">{` (${relationship})`}</span>}:
+                  </span>
+                  <span className="action-type">
+                    {action.type === 'DRAW' ? '抽牌' :
+                     action.type === 'DISCARD' ? '打出' :
+                     action.type === 'TAKE_TILE' ? '拿取' :
+                     action.type === 'REVEAL_TILES' ? '明牌' :
+                     action.type === 'CLAIM_WIN' ? '宣布胜利' :
+                     action.type === 'CONFIRM_WIN' ? '确认胜利' :
+                     action.type === 'DENY_WIN' ? '拒绝胜利' :
+                     action.type}
+                  </span>
+                  {action.data && action.type === 'DISCARD' && (
+                    <span className="action-data">{getTileDisplayName(action.data)}</span>
+                  )}
+                  {action.data && action.type === 'TAKE_TILE' && (
+                    <span className="action-data">{getTileDisplayName(action.data)}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染操作按钮
+  const renderActionButtons = () => {
+    return (
+      <div className="action-buttons">
+        <div className="action-selection">
+          <button 
+            className={actionType === 'discard' ? 'active' : ''}
+            onClick={() => handleActionClick('discard')}
+          >
+            打出牌
+          </button>
+          <button 
+            className={actionType === 'take' ? 'active' : ''}
+            onClick={() => handleActionClick('take')}
+          >
+            拿取牌
+          </button>
+          <button 
+            className={actionType === 'reveal' ? 'active' : ''}
+            onClick={() => handleActionClick('reveal')}
+          >
+            明牌
+          </button>
+          <button onClick={handleClaimWin}>
+            宣布胜利
+          </button>
+        </div>
+        
+        {actionType && (
+          <div className="action-confirmation">
+            <p>已选择: {selectedTiles.map(t => getTileDisplayName(t)).join(', ')}</p>
+            <button 
+              onClick={handleConfirmAction}
+              disabled={selectedTiles.length === 0}
+            >
+              确认
+            </button>
+            <button onClick={() => {
+              setActionType(null);
+              setSelectedTiles([]);
+            }}>
+              取消
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 渲染胜利确认对话框
+  const renderWinConfirmation = () => {
+    if (!showWinConfirmation) return null;
+
+    // 获取宣布胜利者的关系标识
+    let relationship = "";
+    if (user.email === pendingWinner) {
+      relationship = "你自己";
+    } else if (Object.keys(gameState?.playerPositions || {}).length === 2) {
+      relationship = "对家";
+    } else {
+      const winnerPos = getPlayerPosition(pendingWinner);
+      const relativePos = getRelativePosition(winnerPos);
+      relationship = getPlayerRelationship(relativePos);
+    }
+
+    return (
+      <div className="win-confirmation-overlay">
+        <div className="win-confirmation-modal">
+          <h2>胜利确认</h2>
+          <p>
+            {getPlayerDisplayName(pendingWinner)}
+            {relationship && <span className="relationship-text">{` (${relationship})`}</span>}
+            宣布自己胜利了！
+          </p>
+          <p>你同意吗？</p>
+          <div className="confirmation-buttons">
+            <button 
+              className="confirm-button"
+              onClick={() => handleWinConfirmation(true)}
+            >
+              同意
+            </button>
+            <button 
+              className="deny-button"
+              onClick={() => handleWinConfirmation(false)}
+            >
+              拒绝
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染游戏结束画面
+  const renderGameEnd = () => {
+    if (!gameState || gameState.status !== 'FINISHED') return null;
+
+    // 如果有胜利者，获取其关系标识
+    let relationship = "";
+    if (gameState.winnerEmail) {
+      if (user.email === gameState.winnerEmail) {
+        relationship = "你自己";
+      } else if (Object.keys(gameState?.playerPositions || {}).length === 2) {
+        relationship = "对家";
+      } else {
+        const winnerPos = getPlayerPosition(gameState.winnerEmail);
+        const relativePos = getRelativePosition(winnerPos);
+        relationship = getPlayerRelationship(relativePos);
+      }
+    }
+
+    return (
+      <div className="game-end-overlay">
+        <div className="game-end-modal">
+          <h2>游戏结束</h2>
+          {gameState.winnerEmail ? (
+            <p>
+              {getPlayerDisplayName(gameState.winnerEmail)}
+              {relationship && <span className="relationship-text">{` (${relationship})`}</span>}
+              获得了胜利！
+            </p>
+          ) : (
+            <p>游戏平局</p>
+          )}
+          <button onClick={handleBackToRoom}>
+            返回房间
+          </button>
+        </div>
+      </div>
+    );
   };
 
   // 渲染玩家手牌
@@ -397,235 +706,6 @@ const Game = () => {
               {getTileDisplayName(tile)}
             </div>
           ))}
-        </div>
-      </div>
-    );
-  };
-
-  // 渲染其他玩家的牌
-  const renderOtherPlayers = () => {
-    if (!gameState || !players.length) return null;
-
-    return (
-      <div className="other-players">
-        {[1, 2, 3].map((relPos) => {
-          const positions = Object.entries(gameState.playerPositions || {});
-          const playerEntry = positions.find(([_, pos]) => getRelativePosition(pos) === relPos);
-          
-          if (!playerEntry) return (
-            <div key={relPos} className="player-area empty">
-              <div className="player-info">空位</div>
-            </div>
-          );
-          
-          const [playerEmail] = playerEntry;
-          const playerRevealedTiles = revealedTiles[playerEmail] || [];
-          const playerHandCount = playerHandCounts[playerEmail] || 0;
-          const relationship = getPlayerRelationship(relPos);
-          
-          return (
-            <div key={relPos} className={`player-area position-${relPos}`}>
-              <div className="player-info">
-                {getPlayerDisplayName(playerEmail)}
-                {playerEmail === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
-                {relationship && (
-                  <span className={`relationship-badge ${relationship === "上家" ? "shangjiabadge" : relationship === "下家" ? "xiajiabadge" : "duijiabadge"}`}>
-                    {relationship}
-                  </span>
-                )}
-              </div>
-              <div className="player-tiles">
-                {playerRevealedTiles.map((tile, idx) => (
-                  <div key={idx} className="tile revealed">
-                    {getTileDisplayName(tile)}
-                  </div>
-                ))}
-                {Array.from({ length: playerHandCount }).map((_, idx) => (
-                  <div key={`hidden-${idx}`} className="tile hidden">
-                    ?
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // 渲染牌桌中央区域
-  const renderTableCenter = () => {
-    return (
-      <div className="table-center">
-        <div className="draw-pile">
-          <div className="pile-info">
-            <span>牌库剩余: {drawPileCount}</span>
-            <div className="draw-buttons">
-              <button onClick={() => handleDrawTiles(1)}>抽1张</button>
-              <button onClick={() => handleDrawTiles(3)}>抽3张</button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="discard-pile">
-          <h3>弃牌区</h3>
-          <div className="tiles-container">
-            {discardPile.map((tile, idx) => (
-              <div 
-                key={idx} 
-                className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
-                onClick={() => actionType === 'take' ? handleTileSelect(tile) : null}
-              >
-                {getTileDisplayName(tile)}
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="recent-actions">
-          <h3>最近操作</h3>
-          <div className="actions-list">
-            {recentActions.slice().reverse().map((action, idx) => {
-              // 获取操作玩家的相对位置和关系标识
-              const playerPos = getPlayerPosition(action.playerEmail);
-              const relativePos = getRelativePosition(playerPos);
-              // 如果是用户自己，显示"你自己"，否则显示相应的关系
-              const relationship = user.email === action.playerEmail ? "你自己" : getPlayerRelationship(relativePos);
-              
-              return (
-                <div key={idx} className="action-item">
-                  <span className="action-player">
-                    {getPlayerDisplayName(action.playerEmail)}
-                    {relationship && <span className="relationship-text">{` (${relationship})`}</span>}:
-                  </span>
-                  <span className="action-type">
-                    {action.type === 'DRAW' ? '抽牌' :
-                     action.type === 'DISCARD' ? '打出' :
-                     action.type === 'TAKE_TILE' ? '拿取' :
-                     action.type === 'REVEAL_TILES' ? '明牌' :
-                     action.type === 'CLAIM_WIN' ? '宣布胜利' :
-                     action.type === 'CONFIRM_WIN' ? '确认胜利' :
-                     action.type === 'DENY_WIN' ? '拒绝胜利' :
-                     action.type}
-                  </span>
-                  {action.data && action.type === 'DISCARD' && (
-                    <span className="action-data">{getTileDisplayName(action.data)}</span>
-                  )}
-                  {action.data && action.type === 'TAKE_TILE' && (
-                    <span className="action-data">{getTileDisplayName(action.data)}</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 渲染操作按钮
-  const renderActionButtons = () => {
-    return (
-      <div className="action-buttons">
-        <div className="action-selection">
-          <button 
-            className={actionType === 'discard' ? 'active' : ''}
-            onClick={() => handleActionClick('discard')}
-          >
-            打出牌
-          </button>
-          <button 
-            className={actionType === 'take' ? 'active' : ''}
-            onClick={() => handleActionClick('take')}
-          >
-            拿取牌
-          </button>
-          <button 
-            className={actionType === 'reveal' ? 'active' : ''}
-            onClick={() => handleActionClick('reveal')}
-          >
-            明牌
-          </button>
-          <button onClick={handleClaimWin}>
-            宣布胜利
-          </button>
-        </div>
-        
-        {actionType && (
-          <div className="action-confirmation">
-            <p>已选择: {selectedTiles.map(t => getTileDisplayName(t)).join(', ')}</p>
-            <button 
-              onClick={handleConfirmAction}
-              disabled={selectedTiles.length === 0}
-            >
-              确认
-            </button>
-            <button onClick={() => {
-              setActionType(null);
-              setSelectedTiles([]);
-            }}>
-              取消
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // 渲染胜利确认对话框
-  const renderWinConfirmation = () => {
-    if (!showWinConfirmation) return null;
-
-    // 获取宣布胜利者的关系标识
-    const winnerPos = getPlayerPosition(pendingWinner);
-    const relativePos = getRelativePosition(winnerPos);
-    const relationship = user.email === pendingWinner ? "你自己" : getPlayerRelationship(relativePos);
-
-    return (
-      <div className="win-confirmation-overlay">
-        <div className="win-confirmation-modal">
-          <h2>胜利确认</h2>
-          <p>
-            {getPlayerDisplayName(pendingWinner)}
-            {relationship && <span className="relationship-text">{` (${relationship})`}</span>}
-            宣布自己胜利了！
-          </p>
-          <p>你同意吗？</p>
-          <div className="confirmation-buttons">
-            <button 
-              className="confirm-button"
-              onClick={() => handleWinConfirmation(true)}
-            >
-              同意
-            </button>
-            <button 
-              className="deny-button"
-              onClick={() => handleWinConfirmation(false)}
-            >
-              拒绝
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 渲染游戏结束画面
-  const renderGameEnd = () => {
-    if (!gameState || gameState.status !== 'FINISHED') return null;
-
-    return (
-      <div className="game-end-overlay">
-        <div className="game-end-modal">
-          <h2>游戏结束</h2>
-          {gameState.winnerEmail ? (
-            <p>{getPlayerDisplayName(gameState.winnerEmail)}获得了胜利！</p>
-          ) : (
-            <p>游戏平局</p>
-          )}
-          <button onClick={handleBackToRoom}>
-            返回房间
-          </button>
         </div>
       </div>
     );
