@@ -247,7 +247,8 @@ class WebSocketService {
   }
 
   takeTile(roomId, tile) {
-    return this.send('TAKE_TILE', { roomId, tile });
+    // 从tile对象中提取id
+    return this.send('TAKE_TILE', { roomId, tileId: tile.id });
   }
 
   revealTiles(roomId, tiles) {
