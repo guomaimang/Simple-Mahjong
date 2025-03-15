@@ -252,7 +252,9 @@ class WebSocketService {
   }
 
   revealTiles(roomId, tiles) {
-    return this.send('REVEAL_TILES', { roomId, tiles });
+    // 从每个tile对象中提取id
+    const tileIds = tiles.map(tile => tile.id);
+    return this.send('REVEAL_TILES', { roomId, tileIds });
   }
 
   claimWin(roomId) {

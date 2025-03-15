@@ -338,7 +338,7 @@ const Game = () => {
               className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
                 ${draggedTileIndex === index ? 'dragging' : ''} 
                 ${dragOverIndex === index ? 'drag-over' : ''}`}
-              onClick={() => actionType === 'discard' ? handleTileSelect(tile) : null}
+              onClick={() => actionType === 'discard' || actionType === 'reveal' ? handleTileSelect(tile) : null}
               draggable={true}
               onDragStart={(e) => handleDragStart(e, index)}
               onDragEnd={handleDragEnd}
