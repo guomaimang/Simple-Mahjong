@@ -85,7 +85,6 @@
   display: flex;  /* 使用flex布局 */
   flex-direction: column; /* 垂直方向排列 */
   justify-content: flex-start; /* 确保内容从顶部开始排列 */
-  align-items: flex-start; /* 水平方向左对齐 */
 }
 
 .player-area.empty {
@@ -100,14 +99,10 @@
 .player-area.empty .player-info {
   width: 100%;
   margin-bottom: 0.5rem;
-  align-self: flex-start; /* 确保从顶部开始 */
 }
 
 .player-area.empty .empty-placeholder {
-  width: 100%;
   margin: 0.5rem 0;
-  text-align: left; /* 左对齐文本 */
-  padding-left: 0.5rem;
 }
 
 /* 两人游戏时，对家在中间位置 */
@@ -136,7 +131,9 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   width: 100%; /* 确保宽度占满整个容器 */
-  align-self: flex-start; /* 确保从顶部开始 */
+  height: auto; /* 使高度自适应内容 */
+  flex-shrink: 0; /* 防止被压缩 */
+  flex-grow: 0; /* 防止被拉伸 */
 }
 
 .dealer-badge {
@@ -189,7 +186,6 @@
   overflow-y: auto; /* 如果牌太多则允许滚动 */
   width: 100%; /* 确保宽度占满整个容器 */
   margin-top: 0.3rem; /* 与玩家信息保持一定距离 */
-  align-self: flex-start; /* 确保从顶部开始 */
 }
 
 .revealed-tiles-section,

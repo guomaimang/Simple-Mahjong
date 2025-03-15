@@ -325,8 +325,12 @@ const Game = () => {
     const badgeClass = relationship === "上家" ? "shangjiabadge" : 
                        relationship === "下家" ? "xiajiabadge" : "duijiabadge";
     
+    // 额外的颜色区分类名
+    const relationshipColorClass = relationship === "上家" ? "blue-background" : 
+                                relationship === "下家" ? "orange-background" : "red-background";
+    
     return (
-      <div key={position} className={`player-area position-${position}`}>
+      <div key={position} className={`player-area position-${position} ${relationshipColorClass}`}>
         <div className="player-info">
           {getPlayerDisplayName(playerEmail)}
           {playerEmail === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
@@ -361,8 +365,12 @@ const Game = () => {
     const badgeClass = relationship === "上家" ? "shangjiabadge" : 
                        relationship === "下家" ? "xiajiabadge" : "duijiabadge";
     
+    // 额外的颜色区分类名
+    const relationshipColorClass = relationship === "上家" ? "blue-background" : 
+                               relationship === "下家" ? "orange-background" : "red-background";
+    
     return (
-      <div key={position} className={`player-area position-${position} empty`}>
+      <div key={position} className={`player-area position-${position} empty ${relationshipColorClass}`}>
         <div className="player-info">
           <span>空位</span>
           <span className={`relationship-badge ${badgeClass}`}>{relationship}</span>
