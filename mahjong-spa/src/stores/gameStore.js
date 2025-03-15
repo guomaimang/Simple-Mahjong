@@ -65,11 +65,19 @@ export const useGameStore = create((set, get) => ({
           gameState.roomId = roomId;
         }
         
-        // 删除对明牌的排序，直接使用原始明牌数据
+        // 对玩家手牌进行排序
+        const sortedPlayerHand = get().sortTiles(playerHand);
+        
+        // 对所有玩家的明牌进行排序
+        const sortedRevealedTiles = {};
+        Object.keys(revealedTiles).forEach(email => {
+          sortedRevealedTiles[email] = get().sortTiles(revealedTiles[email]);
+        });
+        
         set({
           gameState,
-          playerHand,
-          revealedTiles, // 使用未排序的明牌数据
+          playerHand: sortedPlayerHand, // 使用排序后的手牌
+          revealedTiles: sortedRevealedTiles, // 使用排序后的明牌
           playerHandCounts,
           discardPile,
           drawPileCount,
@@ -195,10 +203,14 @@ export const useGameStore = create((set, get) => ({
         console.log('胜利者手牌:', handTiles);
         console.log('胜利者明牌:', revealedTiles);
         
+        // 对胜利者的手牌和明牌进行排序
+        const sortedHandTiles = get().sortTiles(handTiles);
+        const sortedRevealedTiles = get().sortTiles(revealedTiles);
+        
         set({ 
           pendingWinner: claimerEmail,
-          winnerHandTiles: handTiles,
-          winnerRevealedTiles: revealedTiles
+          winnerHandTiles: sortedHandTiles,
+          winnerRevealedTiles: sortedRevealedTiles
         });
       } else {
         console.log('未设置pendingWinner, roomId匹配:', roomIdFromData === roomId, '获取到claimerEmail:', !!claimerEmail);
@@ -475,37 +487,37 @@ export const useGameStore = create((set, get) => ({
       return [];
     }
     
-    // 创建一个映射，用于统计每种牌的数量
-    const tileCountMap = {};
+    // 麻将牌的类型顺序：万、筒、条、风、箭
+    const typeOrder = { WAN: 0, TONG: 1, TIAO: 2, FENG: 3, JIAN: 4 };
+    
+    // 首先按照类型和点数对牌进行分组
+    const groups = {};
     tiles.forEach(tile => {
       const key = `${tile.type}-${tile.value}`;
-      tileCountMap[key] = (tileCountMap[key] || 0) + 1;
+      if (!groups[key]) {
+        groups[key] = {
+          type: tile.type,
+          value: tile.value,
+          tiles: []
+        };
+      }
+      groups[key].tiles.push(tile);
     });
     
-    // 排序规则：
-    // 1. 相同的牌放到一起（数量多的优先）
-    // 2. 对于类型相同的牌放到一起
-    // 3. 从小到大排序
-    return [...tiles].sort((a, b) => {
-      const keyA = `${a.type}-${a.value}`;
-      const keyB = `${b.type}-${b.value}`;
-      
-      // 首先比较牌的数量（相同的牌放到一起，数量多的优先）
-      const countComparison = tileCountMap[keyB] - tileCountMap[keyA];
-      if (countComparison !== 0) {
-        return countComparison;
-      }
-      
-      // 然后按类型排序（类型相同的放在一起）
-      const typeOrder = { WAN: 0, TONG: 1, TIAO: 2, FENG: 3, JIAN: 4 };
+    // 把分组转换为数组
+    const groupsArray = Object.values(groups);
+    
+    // 对分组进行排序：先按类型，然后按点数
+    groupsArray.sort((a, b) => {
       const typeComparison = typeOrder[a.type] - typeOrder[b.type];
       if (typeComparison !== 0) {
         return typeComparison;
       }
-      
-      // 最后按值排序（从小到大）
       return a.value - b.value;
     });
+    
+    // 生成最终排序后的牌数组
+    return groupsArray.flatMap(group => group.tiles);
   },
 
   // 对手牌进行排序
