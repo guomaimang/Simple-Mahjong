@@ -175,7 +175,20 @@
 }
 
 .relationship-badge.duijiabadge {
-  background-color: #D32F2F; /* 深红色，与浅红色背景形成对比 */
+  background-color: #e53935;
+}
+
+/* 手牌数量徽章 */
+.tile-count-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  background-color: #607d8b;
+  color: white;
+  font-size: 0.7rem;
+  border-radius: 12px;
+  font-weight: bold;
+  vertical-align: middle;
 }
 
 .player-tiles {

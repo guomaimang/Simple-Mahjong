@@ -325,12 +325,16 @@ const Game = () => {
     const relationshipColorClass = relationship === "上家" ? "blue-background" : 
                                 relationship === "下家" ? "orange-background" : "red-background";
     
+    // 计算总牌数：明牌数量 + 手牌数量
+    const totalTilesCount = playerRevealedTiles.length + playerHandCount;
+    
     return (
       <div key={position} className={`player-area position-${position} ${relationshipColorClass}`}>
         <div className="player-info">
           {getPlayerDisplayName(playerEmail)}
           {playerEmail === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
           <span className={`relationship-badge ${badgeClass}`}>{relationship}</span>
+          <span className="tile-count-badge">({totalTilesCount})</span>
         </div>
         <div className="player-tiles">
           {playerRevealedTiles.length > 0 && (
@@ -801,6 +805,9 @@ const Game = () => {
 
     // 获取当前用户的明牌
     const myRevealedTiles = user && user.email ? revealedTiles[user.email] || [] : [];
+    
+    // 计算总牌数：明牌数量 + 手牌数量
+    const totalTilesCount = myRevealedTiles.length + playerHand.length;
 
     return (
       <div className="player-hand">
@@ -809,6 +816,7 @@ const Game = () => {
           <div className="player-name">
             <span>{getPlayerDisplayName(user.email)}</span>
             {user.email === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
+            <span className="tile-count-badge">({totalTilesCount})</span>
           </div>
         </div>
         
