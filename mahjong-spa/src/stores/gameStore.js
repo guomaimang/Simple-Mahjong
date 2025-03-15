@@ -82,15 +82,33 @@ export const useGameStore = create((set, get) => ({
         const newAction = {
           type: data.gameData.type,
           playerEmail: data.gameData.playerEmail,
-          data: data.gameData.tile || data.gameData.data,
           timestamp: data.timestamp
         };
+        
+        // 根据操作类型处理数据
+        if (data.gameData.type === 'DISCARD') {
+          newAction.data = data.gameData.tile || data.gameData.data;
+        } else if (data.gameData.type === 'TAKE_TILE') {
+          newAction.data = data.gameData.tile || data.gameData.data;
+          // 如果没有tile对象但有tileId，尝试从弃牌堆中找到对应的牌
+          if (!newAction.data && data.gameData.tileId) {
+            console.log('Trying to find tile by ID:', data.gameData.tileId);
+            const discardPile = get().discardPile;
+            const tile = discardPile.find(t => t.id === data.gameData.tileId);
+            if (tile) {
+              console.log('Found tile in discard pile:', tile);
+              newAction.data = tile;
+            }
+          }
+        } else {
+          newAction.data = data.gameData.data;
+        }
         
         const currentActions = [...get().recentActions];
         currentActions.push(newAction);
         
-        // 只保留最近的10个操作
-        const recentActions = currentActions.slice(Math.max(0, currentActions.length - 10));
+        // 只保留最近的5个操作
+        const recentActions = currentActions.slice(Math.max(0, currentActions.length - 5));
         
         set({ recentActions });
         

@@ -331,8 +331,8 @@ public class WebSocketController extends TextWebSocketHandler {
         int tileId = data.get("tileId").asInt();
         
         // Take tile
-        boolean taken = gameService.takeTile(roomId, userEmail, tileId);
-        if (!taken) {
+        Tile takenTile = gameService.takeTile(roomId, userEmail, tileId);
+        if (takenTile == null) {
             webSocketService.sendErrorMessage(userEmail, "TAKE_FAILED", "Failed to take tile");
             return;
         }
@@ -343,7 +343,8 @@ public class WebSocketController extends TextWebSocketHandler {
             webSocketService.sendGameMessage(roomId, "ACTION", Map.of(
                 "type", "TAKE_TILE",
                 "playerEmail", userEmail,
-                "tileId", tileId
+                "tileId", tileId,
+                "tile", takenTile
             ));
             
             // Send updated game state to each player

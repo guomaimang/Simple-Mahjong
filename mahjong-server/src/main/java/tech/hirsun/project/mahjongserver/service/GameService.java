@@ -162,17 +162,17 @@ public class GameService {
      * @param roomId Room ID
      * @param userEmail User's email
      * @param tileId ID of the tile to take
-     * @return true if successful, false otherwise
+     * @return The taken tile, or null if not found or not in room
      */
-    public boolean takeTile(String roomId, String userEmail, int tileId) {
+    public Tile takeTile(String roomId, String userEmail, int tileId) {
         Room room = roomRepository.findById(roomId);
         if (room == null || room.getStatus() != Room.RoomStatus.PLAYING || !room.getPlayerEmails().contains(userEmail)) {
-            return false;
+            return null;
         }
         
         Game game = room.getCurrentGame();
         if (game == null || game.getStatus() != Game.GameStatus.IN_PROGRESS) {
-            return false;
+            return null;
         }
         
         // Find tile in discard pile - 需要在移除前找到牌对象，用于记录和添加到玩家手牌
@@ -189,7 +189,7 @@ public class GameService {
             // Remove tile from discard pile
             boolean removed = game.removeTileFromDiscardPile(tileId);
             if (!removed) {
-                return false;
+                return null;
             }
             
             // Add tile to player's hand
@@ -200,10 +200,10 @@ public class GameService {
             
             // Save room with updated game
             roomRepository.save(room);
-            return true;
+            return tileToTake;
         }
         
-        return false;
+        return null;
     }
 
     /**
@@ -485,7 +485,7 @@ public class GameService {
             state.put("discardPile", game.getDiscardPile());
             
             // Recent actions
-            state.put("recentActions", game.getRecentActions(2));
+            state.put("recentActions", game.getRecentActions(5));
             
             // Win status
             if (game.getStatus() == Game.GameStatus.FINISHED) {

@@ -429,7 +429,7 @@ const Game = () => {
         <div className="recent-actions">
           <h3>最近操作</h3>
           <div className="actions-list">
-            {recentActions.map((action, idx) => (
+            {recentActions.slice().reverse().map((action, idx) => (
               <div key={idx} className="action-item">
                 <span className="action-player">{getPlayerDisplayName(action.playerEmail)}:</span>
                 <span className="action-type">
@@ -443,6 +443,9 @@ const Game = () => {
                    action.type}
                 </span>
                 {action.data && action.type === 'DISCARD' && (
+                  <span className="action-data">{getTileDisplayName(action.data)}</span>
+                )}
+                {action.data && action.type === 'TAKE_TILE' && (
                   <span className="action-data">{getTileDisplayName(action.data)}</span>
                 )}
               </div>
