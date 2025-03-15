@@ -538,7 +538,7 @@ public class GameService {
             state.put("discardPile", game.getDiscardPile());
             
             // Recent actions
-            state.put("recentActions", game.getRecentActions(5));
+            state.put("recentActions", game.getRecentActions(20));
             
             // Win status
             if (game.getStatus() == Game.GameStatus.FINISHED) {

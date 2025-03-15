@@ -112,8 +112,8 @@ export const useGameStore = create((set, get) => ({
         const currentActions = [...get().recentActions];
         currentActions.push(newAction);
         
-        // 只保留最近的5个操作
-        const recentActions = currentActions.slice(Math.max(0, currentActions.length - 5));
+        // 只保留最近的20个操作
+        const recentActions = currentActions.slice(Math.max(0, currentActions.length - 20));
         
         set({ recentActions });
         
