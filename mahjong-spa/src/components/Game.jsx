@@ -636,26 +636,9 @@ const Game = () => {
 
   // 渲染操作按钮
   const renderActionButtons = () => {
-    // 获取当前用户的明牌
-    const myRevealedTiles = user && user.email ? revealedTiles[user.email] || [] : [];
-    
     return (
       <div className="action-buttons">
         <div className="action-selection">
-          <button 
-            className={actionType === 'reveal' ? 'active' : ''}
-            onClick={() => handleActionClick('reveal')}
-          >
-            明牌
-          </button>
-          {myRevealedTiles.length > 0 && (
-            <button 
-              className={actionType === 'hide' ? 'active' : ''}
-              onClick={() => handleActionClick('hide')}
-            >
-              暗牌
-            </button>
-          )}
           <button onClick={handleDrawTiles}>
             抽牌(余{drawPileCount}张)
           </button>
