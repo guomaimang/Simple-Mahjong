@@ -672,8 +672,8 @@ const Game = () => {
           ) : (
             <p>游戏平局</p>
           )}
-          <button onClick={handleBackToRoom}>
-            返回房间
+          <button onClick={handleBackToHome}>
+            返回首页
           </button>
         </div>
       </div>
@@ -810,9 +810,10 @@ const Game = () => {
         <div className="error-message">
           <h2>出错了</h2>
           <p>{error}</p>
+          <p>错误原因可能是: 游戏已开始，您无法加入对局; 或者房间密码错误</p>
           <div className="error-actions">
             <button onClick={() => window.location.reload()}>刷新页面</button>
-            <button onClick={handleBackToRoom}>返回房间</button>
+            <button onClick={handleBackToHome}>返回首页</button>
           </div>
         </div>
       </div>
@@ -825,7 +826,7 @@ const Game = () => {
         <div className="loading-message">
           <h2>正在加载游戏状态...</h2>
           <p>如果长时间无响应，请<button onClick={() => window.location.reload()}>刷新页面</button>重试</p>
-          <p>或者尝试<button onClick={handleBackToRoom}>返回房间</button>后重新进入游戏</p>
+          <p>或者尝试<button onClick={handleBackToHome}>返回首页</button>后重新进入游戏</p>
         </div>
       </div>
     );

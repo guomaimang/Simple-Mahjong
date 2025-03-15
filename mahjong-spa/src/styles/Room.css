@@ -194,3 +194,81 @@
   background-color: #ffebee;
   border-radius: 4px;
 }
+
+/* 新的错误页面样式 */
+.error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e7eaf0 100%);
+  padding: 2rem;
+}
+
+.error-card {
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.error-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background-color: #ffebee;
+  color: #e53935;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.error-card h2 {
+  color: #333;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.error-card p {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.error-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.back-button {
+  padding: 0.9rem 1.8rem;
+  background-color: #4b6cb7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(75, 108, 183, 0.2);
+}
+
+.back-button:hover {
+  background-color: #3d5a9e;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(75, 108, 183, 0.3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

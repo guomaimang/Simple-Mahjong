@@ -125,11 +125,35 @@ const Room = () => {
   }
 
   if (error) {
-    return <div className="error-message">{error}</div>;
+    return (
+      <div className="error-container">
+        <div className="error-card">
+          <div className="error-icon">!</div>
+          <h2>出错了</h2>
+          <p>{error}</p>
+          <button className="back-button" onClick={() => navigate('/rooms')}>
+            返回首页
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!currentRoom) {
-    return <div className="error-message">房间不存在或已过期</div>;
+    return (
+      <div className="error-container">
+        <div className="error-card">
+          <div className="error-icon">?</div>
+          <h2>房间不存在</h2>
+          <p>您尝试访问的房间可能不存在或已过期。</p>
+          <div className="error-actions">
+            <button className="back-button" onClick={() => navigate('/rooms')}>
+              返回首页
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const isCreator = user.email === currentRoom.creatorEmail;

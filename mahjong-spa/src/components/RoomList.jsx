@@ -67,21 +67,23 @@ const RoomList = () => {
       </header>
 
       <div className="room-actions">
-        <button 
-          className="create-room-button" 
-          onClick={handleCreateRoom}
-          disabled={loading}
-        >
-          创建新房间
-        </button>
-        
-        <button 
-          className="refresh-button" 
-          onClick={() => fetchRooms()}
-          disabled={loading}
-        >
-          刷新
-        </button>
+        <div className="room-actions-left">
+          <button 
+            className="create-room-button" 
+            onClick={handleCreateRoom}
+            disabled={loading}
+          >
+            创建新房间
+          </button>
+          
+          <button 
+            className="refresh-button" 
+            onClick={() => fetchRooms()}
+            disabled={loading}
+          >
+            刷新
+          </button>
+        </div>
 
         <form className="join-room-form" onSubmit={handleJoinRoom}>
           <input
