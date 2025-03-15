@@ -267,12 +267,23 @@ const Game = () => {
       removeListeners();
       resetGameState();
       
-      // 确保当前仍在房间中
-      await fetchRoom(roomId);
+      // 确保当前仍在房间中，并等待房间状态刷新
+      console.log('Fetching latest room state before starting new game...');
+      const roomResponse = await fetchRoom(roomId);
       
+      // 额外检查房间状态是否为WAITING
+      if (roomResponse && roomResponse.room && roomResponse.room.status !== 'WAITING') {
+        console.log('Room not in WAITING state, waiting 1 second before trying again...');
+        // 如果房间不处于等待状态，等待1秒后再次获取
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await fetchRoom(roomId);
+      }
+      
+      console.log('Calling startGame API...');
       // 调用开始游戏API
       const success = await startGame(roomId);
       if (success) {
+        console.log('Game started successfully, sending WebSocket notification...');
         // 通过WebSocket发送开始游戏消息
         await websocketService.startGame(roomId);
         
@@ -287,9 +298,14 @@ const Game = () => {
             console.error('Failed to fetch new game state:', error);
           }
         }, 1000);
+      } else {
+        console.error('Failed to start game. API returned failure.');
+        // 显示错误消息
+        alert('无法开始新游戏。请确保房间状态正确且你是房主。');
       }
     } catch (error) {
       console.error('Failed to start new game:', error);
+      alert('开始新游戏时出错: ' + (error.message || '未知错误'));
     }
   };
 

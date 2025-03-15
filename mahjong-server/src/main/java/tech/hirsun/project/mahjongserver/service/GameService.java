@@ -416,13 +416,22 @@ public class GameService {
      * @param winnerEmail Email of the winner, or null for a draw
      */
     public void endGame(String roomId, String winnerEmail) {
+        System.out.println("Ending game in room: " + roomId + ", winner: " + (winnerEmail != null ? winnerEmail : "DRAW"));
+        
         Room room = roomRepository.findById(roomId);
-        if (room == null || room.getStatus() != Room.RoomStatus.PLAYING) {
+        if (room == null) {
+            System.out.println("Room not found: " + roomId);
+            return;
+        }
+        
+        if (room.getStatus() != Room.RoomStatus.PLAYING) {
+            System.out.println("Room " + roomId + " is not in PLAYING state. Current status: " + room.getStatus());
             return;
         }
         
         Game game = room.getCurrentGame();
         if (game == null) {
+            System.out.println("Room " + roomId + " has no current game");
             return;
         }
         
@@ -433,13 +442,24 @@ public class GameService {
         // Set winner if provided
         if (winnerEmail != null) {
             game.setWinnerEmail(winnerEmail);
+            System.out.println("Setting winner to: " + winnerEmail);
         }
         
         // Update room status
+        System.out.println("Changing room status from PLAYING to WAITING");
         room.setStatus(Room.RoomStatus.WAITING);
         
         // Save room with updated game
         roomRepository.save(room);
+        System.out.println("Room state saved after game end");
+        
+        // 重新获取房间以确认状态已更新
+        Room updatedRoom = roomRepository.findById(roomId);
+        if (updatedRoom != null) {
+            System.out.println("Room status after save: " + updatedRoom.getStatus());
+            System.out.println("Game status after save: " + 
+                (updatedRoom.getCurrentGame() != null ? updatedRoom.getCurrentGame().getStatus() : "NULL"));
+        }
         
         // Clear win confirmations for this room
         winConfirmations.remove(roomId);
@@ -448,7 +468,10 @@ public class GameService {
         Map<String, Object> data = new HashMap<>();
         data.put("winner", winnerEmail);
         data.put("isDraw", winnerEmail == null);
+        data.put("roomId", roomId);
         webSocketService.sendGameMessage(roomId, "GAME_END", data);
+        
+        System.out.println("Game end notification sent for room: " + roomId);
     }
 
     /**

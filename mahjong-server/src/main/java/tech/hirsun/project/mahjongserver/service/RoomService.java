@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import tech.hirsun.project.mahjongserver.model.Game;
 import tech.hirsun.project.mahjongserver.model.Room;
 import tech.hirsun.project.mahjongserver.model.User;
 import tech.hirsun.project.mahjongserver.repository.RoomRepository;
@@ -89,14 +90,48 @@ public class RoomService {
     public boolean startGame(String roomId, String userEmail) {
         Room room = roomRepository.findById(roomId);
         
-        // Check if room exists, user is the creator, and game can be started
-        if (room != null && room.getCreatorEmail().equals(userEmail) && room.canStartGame()) {
-            room.setStatus(Room.RoomStatus.PLAYING);
-            roomRepository.save(room);
-            return true;
+        System.out.println("StartGame request for room " + roomId + " from user " + userEmail);
+        
+        if (room == null) {
+            System.out.println("Room not found: " + roomId);
+            return false;
         }
         
-        return false;
+        // 增加详细日志
+        System.out.println("Room status: " + room.getStatus());
+        System.out.println("Room creator: " + room.getCreatorEmail());
+        System.out.println("Player count: " + room.getPlayerEmails().size());
+        System.out.println("Current game: " + (room.getCurrentGame() != null ? "present" : "null"));
+        
+        // 如果房间有游戏且游戏状态为FINISHED，但房间状态不是WAITING
+        // 则自动将房间状态设置为WAITING
+        if (room.getCurrentGame() != null && 
+            room.getCurrentGame().getStatus() == Game.GameStatus.FINISHED && 
+            room.getStatus() != Room.RoomStatus.WAITING) {
+            
+            System.out.println("Room has finished game but status is not WAITING. Fixing status...");
+            room.setStatus(Room.RoomStatus.WAITING);
+            roomRepository.save(room);
+        }
+        
+        // 检查用户是否是房主
+        if (!room.getCreatorEmail().equals(userEmail)) {
+            System.out.println("User " + userEmail + " is not the creator of room " + roomId);
+            return false;
+        }
+        
+        // 检查游戏是否可以开始
+        if (!room.canStartGame()) {
+            System.out.println("Cannot start game in room " + roomId + 
+                ". Need at least 2 players and room must be in waiting state");
+            return false;
+        }
+        
+        // 可以开始游戏
+        System.out.println("Starting game in room " + roomId);
+        room.setStatus(Room.RoomStatus.PLAYING);
+        roomRepository.save(room);
+        return true;
     }
 
     /**

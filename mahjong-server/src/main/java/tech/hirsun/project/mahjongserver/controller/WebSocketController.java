@@ -190,17 +190,39 @@ public class WebSocketController extends TextWebSocketHandler {
         LOGGER.info("Handling START_GAME request for room: " + roomId + " from user: " + userEmail);
         
         // Check if user is the room creator
-        Room room = roomService.getRoomById(roomId);
+        Room room = roomRepository.findById(roomId);
         if (room == null) {
             LOGGER.warning("Room not found: " + roomId);
             webSocketService.sendErrorMessage(userEmail, "ROOM_NOT_FOUND", "Room not found");
             return;
         }
         
+        // 增加详细日志
+        LOGGER.info("Room status: " + room.getStatus());
+        LOGGER.info("Room creator: " + room.getCreatorEmail());
+        LOGGER.info("Player count: " + room.getPlayerEmails().size());
+        LOGGER.info("Current game: " + (room.getCurrentGame() != null ? "present" : "null"));
+        if (room.getCurrentGame() != null) {
+            LOGGER.info("Game status: " + room.getCurrentGame().getStatus());
+        }
+        
         if (!room.getCreatorEmail().equals(userEmail)) {
             LOGGER.warning("User " + userEmail + " is not the creator of room " + roomId);
             webSocketService.sendErrorMessage(userEmail, "NOT_CREATOR", "Only the room creator can start the game");
             return;
+        }
+        
+        // 如果游戏已经结束但房间状态不是WAITING，修复它
+        if (room.getCurrentGame() != null && 
+            room.getCurrentGame().getStatus() == Game.GameStatus.FINISHED && 
+            room.getStatus() != Room.RoomStatus.WAITING) {
+            
+            LOGGER.info("Room has finished game but status is not WAITING. Fixing status...");
+            room.setStatus(Room.RoomStatus.WAITING);
+            roomRepository.save(room);
+            
+            // 重新获取房间，以确保状态已更新
+            room = roomRepository.findById(roomId);
         }
         
         // Check if game can be started
