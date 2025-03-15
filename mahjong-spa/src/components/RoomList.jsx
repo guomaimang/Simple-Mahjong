@@ -140,8 +140,9 @@ const RoomList = () => {
                     <button 
                       onClick={() => navigate(`/rooms/${room.roomId}`)}
                       disabled={room.status === 'FINISHED'}
+                      className={room.status === 'PLAYING' ? 'resume-button' : ''}
                     >
-                      进入
+                      {room.status === 'PLAYING' ? '恢复' : '进入'}
                     </button>
                   </td>
                 </tr>

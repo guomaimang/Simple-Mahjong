@@ -179,4 +179,14 @@
   padding: 1rem;
   background-color: #ffebee;
   border-radius: 4px;
+}
+
+.resume-button {
+  color: #4caf50 !important;
+  background-color: white !important;
+  border: 1px solid #4caf50 !important;
+}
+
+.resume-button:hover {
+  background-color: #f0fff0 !important;
 } 
