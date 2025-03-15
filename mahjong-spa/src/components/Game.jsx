@@ -34,7 +34,8 @@ const Game = () => {
     confirmWin,
     resetGameState,
     winnerHandTiles,
-    winnerRevealedTiles
+    winnerRevealedTiles,
+    lastDrawnTile
   } = useGameStore();
 
   const [selectedTiles, setSelectedTiles] = useState([]);
@@ -1000,6 +1001,11 @@ const Game = () => {
     // 计算总牌数：明牌数量 + 手牌数量
     const totalTilesCount = myRevealedTiles.length + playerHand.length;
 
+    // 检查牌是否是刚刚抽到的牌
+    const isLastDrawnTile = (tile) => {
+      return lastDrawnTile && lastDrawnTile.id === tile.id;
+    };
+
     return (
       <div className="player-hand">
         {/* 玩家信息区域 */}
@@ -1145,7 +1151,8 @@ const Game = () => {
                   ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
                   ${draggedTileIndex === index ? 'dragging' : ''} 
                   ${dragOverIndex === index ? 'drag-over' : ''}
-                  ${isRevealedTile(tile) ? 'my-revealed' : ''}`}
+                  ${isRevealedTile(tile) ? 'my-revealed' : ''}
+                  ${isLastDrawnTile(tile) ? 'last-drawn' : ''}`}
                 onClick={() => handleTileSelect(tile)}
                 draggable={true}
                 onDragStart={(e) => handleDragStart(e, index)}

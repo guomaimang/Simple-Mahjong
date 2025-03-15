@@ -17,6 +17,7 @@ export const useGameStore = create((set, get) => ({
   oneTimeListeners: [],
   winnerHandTiles: [],
   winnerRevealedTiles: [],
+  lastDrawnTile: null,
 
   // 初始化游戏状态监听
   initializeListeners: (roomId) => {
@@ -387,7 +388,25 @@ export const useGameStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       // 只能抽一张牌
-      await websocketService.drawTile(roomId);
+      const response = await websocketService.drawTile(roomId);
+      
+      // 等待一小段时间，确保游戏状态已更新
+      setTimeout(() => {
+        // 检查玩家手牌是否有更新
+        const { playerHand } = get();
+        // 查找刚刚抽到的牌（最后一张牌）
+        if (playerHand.length > 0) {
+          const lastTile = playerHand[playerHand.length - 1];
+          // 设置最近抽到的牌
+          set({ lastDrawnTile: lastTile });
+          
+          // 5秒后自动清除标记
+          setTimeout(() => {
+            set({ lastDrawnTile: null });
+          }, 5000);
+        }
+      }, 300);
+      
       set({ loading: false });
     } catch (error) {
       set({ 
@@ -543,7 +562,8 @@ export const useGameStore = create((set, get) => ({
       tryCount: 0,
       oneTimeListeners: [],
       winnerHandTiles: [],
-      winnerRevealedTiles: []
+      winnerRevealedTiles: [],
+      lastDrawnTile: null
     });
   },
 })); 

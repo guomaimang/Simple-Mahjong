@@ -1000,6 +1000,21 @@
   background-color: #e8f5e9;
 }
 
+/* 最近抽到的牌样式 */
+.tile.last-drawn {
+  background-color: #fff9c4; /* 淡黄色背景 */
+  border: 2px solid #ffd600; /* 金黄色边框 */
+  box-shadow: 0 0 8px rgba(255, 214, 0, 0.6); /* 黄色阴影 */
+  animation: highlight-pulse 2s infinite; /* 添加呼吸效果动画 */
+}
+
+/* 呼吸效果动画 */
+@keyframes highlight-pulse {
+  0% { box-shadow: 0 0 5px rgba(255, 214, 0, 0.6); }
+  50% { box-shadow: 0 0 12px rgba(255, 214, 0, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(255, 214, 0, 0.6); }
+}
+
 /* 手牌区域提示样式 */
 .my-hand-tiles .drag-area-hint {
   position: absolute;
