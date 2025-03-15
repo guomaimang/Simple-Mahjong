@@ -1,5 +1,5 @@
 // WebSocket服务配置
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws/game';
 
 class WebSocketService {
   constructor() {
