@@ -1,20 +1,28 @@
 package tech.hirsun.mahjong.controller;
 
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
-import tech.hirsun.mahjong.model.*;
-import tech.hirsun.mahjong.service.AuthService;
-import tech.hirsun.mahjong.service.GameService;
-import tech.hirsun.mahjong.service.RoomService;
-
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
+
+import tech.hirsun.mahjong.model.ActionType;
+import tech.hirsun.mahjong.model.Game;
+import tech.hirsun.mahjong.model.GameAction;
+import tech.hirsun.mahjong.model.GameStatus;
+import tech.hirsun.mahjong.model.Room;
+import tech.hirsun.mahjong.model.Tile;
+import tech.hirsun.mahjong.model.TileType;
+import tech.hirsun.mahjong.model.User;
+import tech.hirsun.mahjong.service.AuthService;
+import tech.hirsun.mahjong.service.GameService;
+import tech.hirsun.mahjong.service.RoomService;
 
 @Controller
 public class WebSocketController {
@@ -118,8 +126,8 @@ public class WebSocketController {
                 }
                 
                 try {
-                    TileType type = TileType.valueOf(tileType);
-                    tiles.add(new Tile(type, value));
+                    TileType tileTypeEnum = TileType.valueOf(tileType);
+                    tiles.add(new Tile(tileTypeEnum, value));
                 } catch (IllegalArgumentException e) {
                     sendErrorMessage(principal.getName(), "无效的牌类型");
                     return;
