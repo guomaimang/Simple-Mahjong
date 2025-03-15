@@ -15,6 +15,7 @@ const Game = () => {
     gameState, 
     playerHand, 
     revealedTiles, 
+    playerHandCounts,
     discardPile, 
     drawPileCount, 
     recentActions,
@@ -371,6 +372,7 @@ const Game = () => {
           
           const [playerEmail] = playerEntry;
           const playerRevealedTiles = revealedTiles[playerEmail] || [];
+          const playerHandCount = playerHandCounts[playerEmail] || 0;
           
           return (
             <div key={relPos} className={`player-area position-${relPos}`}>
@@ -384,7 +386,7 @@ const Game = () => {
                     {getTileDisplayName(tile)}
                   </div>
                 ))}
-                {Array.from({ length: 13 - playerRevealedTiles.length }).map((_, idx) => (
+                {Array.from({ length: playerHandCount }).map((_, idx) => (
                   <div key={`hidden-${idx}`} className="tile hidden">
                     ?
                   </div>

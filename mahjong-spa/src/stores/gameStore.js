@@ -6,6 +6,7 @@ export const useGameStore = create((set, get) => ({
   gameState: null,
   playerHand: [],
   revealedTiles: {},
+  playerHandCounts: {},
   discardPile: [],
   drawPileCount: 0,
   recentActions: [],
@@ -38,12 +39,14 @@ export const useGameStore = create((set, get) => ({
         const discardPile = data.discardPile || [];
         const drawPileCount = data.remainingTiles || data.drawPileCount || 0;
         const recentActions = data.recentActions || [];
+        const playerHandCounts = data.playerHandCounts || {};
         
         console.log('Parsed game state data:', { 
           gameState, 
           handSize: playerHand.length, 
           discardPileSize: discardPile.length,
-          drawPileCount
+          drawPileCount,
+          playerHandCounts
         });
         
         // 确保gameState包含必要的字段
@@ -55,6 +58,7 @@ export const useGameStore = create((set, get) => ({
           gameState,
           playerHand,
           revealedTiles,
+          playerHandCounts,
           discardPile,
           drawPileCount,
           recentActions,
@@ -399,6 +403,7 @@ export const useGameStore = create((set, get) => ({
       gameState: null,
       playerHand: [],
       revealedTiles: {},
+      playerHandCounts: {},
       discardPile: [],
       drawPileCount: 0,
       recentActions: [],

@@ -481,6 +481,13 @@ public class GameService {
             // Revealed tiles for all players
             state.put("revealedTiles", game.getPlayerRevealedTiles());
             
+            // 添加每个玩家的手牌数量信息
+            Map<String, Integer> playerHandCounts = new HashMap<>();
+            game.getPlayerHands().forEach((email, tiles) -> {
+                playerHandCounts.put(email, tiles.size());
+            });
+            state.put("playerHandCounts", playerHandCounts);
+            
             // Discard pile
             state.put("discardPile", game.getDiscardPile());
             
