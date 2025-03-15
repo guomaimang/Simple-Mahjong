@@ -141,8 +141,12 @@ const Game = () => {
 
   // 监听胜利声明
   useEffect(() => {
+    console.log('pendingWinner状态更新:', pendingWinner, '当前用户:', user.email);
     if (pendingWinner && pendingWinner !== user.email) {
+      console.log('显示胜利确认对话框，声明胜利者:', pendingWinner);
       setShowWinConfirmation(true);
+    } else {
+      console.log('不显示胜利确认对话框，原因:', !pendingWinner ? '没有声明胜利者' : '当前用户是声明胜利者');
     }
   }, [pendingWinner, user.email]);
 

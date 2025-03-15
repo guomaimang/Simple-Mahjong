@@ -299,119 +299,200 @@ public class GameService {
     }
 
     /**
-     * Claim victory
+     * Process a victory claim from a player
      * @param roomId Room ID
-     * @param userEmail User's email
-     * @return true if claim registered, false otherwise
+     * @param userEmail User's email who is claiming victory
+     * @return true if claim processed successfully, false otherwise
      */
     public boolean claimVictory(String roomId, String userEmail) {
+        System.out.println("Processing victory claim for room: " + roomId + ", from user: " + userEmail);
+        
+        // 验证房间和玩家
         Room room = roomRepository.findById(roomId);
-        if (room == null || room.getStatus() != Room.RoomStatus.PLAYING || !room.getPlayerEmails().contains(userEmail)) {
+        if (room == null) {
+            System.err.println("Room not found: " + roomId);
+            return false;
+        }
+        
+        if (room.getStatus() != Room.RoomStatus.PLAYING) {
+            System.err.println("Room " + roomId + " is not in PLAYING state. Current status: " + room.getStatus());
+            return false;
+        }
+        
+        if (!room.getPlayerEmails().contains(userEmail)) {
+            System.err.println("User " + userEmail + " is not in room " + roomId);
             return false;
         }
         
         Game game = room.getCurrentGame();
-        if (game == null || game.getStatus() != Game.GameStatus.IN_PROGRESS) {
+        if (game == null) {
+            System.err.println("Room " + roomId + " has no current game");
             return false;
         }
         
-        // Record action
+        if (game.getStatus() != Game.GameStatus.IN_PROGRESS) {
+            System.err.println("Game in room " + roomId + " is not in progress. Current status: " + game.getStatus());
+            return false;
+        }
+        
+        // 记录胜利声明操作
+        System.out.println("Recording CLAIM_WIN action for user: " + userEmail);
         game.addAction(new GameAction(userEmail, GameAction.ActionType.CLAIM_WIN));
         
-        // Initialize win confirmations for this room if not exists
+        // 初始化或重置胜利确认映射
         winConfirmations.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
-        
-        // Reset all confirmations
         Map<String, Boolean> confirmations = winConfirmations.get(roomId);
         confirmations.clear();
         
-        // Set all players to unconfirmed except the claimer
+        // 设置所有其他玩家的确认状态为false（未确认）
         for (String playerEmail : room.getPlayerEmails()) {
             if (!playerEmail.equals(userEmail)) {
                 confirmations.put(playerEmail, false);
+                System.out.println("Setting confirmation status for player " + playerEmail + " to false");
             }
         }
         
-        // Save room with updated game
+        // 保存房间状态
         roomRepository.save(room);
+        System.out.println("Room state saved after victory claim");
         
-        // Notify all players about the claim
-        webSocketService.sendGameMessage(roomId, "CLAIM_WIN", Map.of("playerEmail", userEmail));
+        // 通知所有玩家有人声明胜利
+        System.out.println("Sending WIN_CLAIM notification to all players in room " + roomId);
+        Map<String, Object> claimData = new HashMap<>();
+        claimData.put("claimerEmail", userEmail);
+        claimData.put("timestamp", LocalDateTime.now().toString());
+        webSocketService.sendGameMessage(roomId, "WIN_CLAIM", claimData);
+        
+        // 发送系统通知
+        webSocketService.sendSystemNotification(roomId, userEmail + " 宣布胜利！请其他玩家确认或拒绝。");
         
         return true;
     }
 
     /**
-     * Confirm or deny a victory claim
+     * Process a confirmation or denial of a victory claim
      * @param roomId Room ID
-     * @param userEmail User's email
+     * @param userEmail User's email who is confirming/denying
      * @param confirm true to confirm, false to deny
      * @return true if confirmation processed, false otherwise
      */
     public boolean confirmVictory(String roomId, String userEmail, boolean confirm) {
+        System.out.println("Processing victory " + (confirm ? "confirmation" : "denial") + 
+                          " for room: " + roomId + ", from user: " + userEmail);
+        
+        // 验证房间和玩家
         Room room = roomRepository.findById(roomId);
-        if (room == null || room.getStatus() != Room.RoomStatus.PLAYING || !room.getPlayerEmails().contains(userEmail)) {
+        if (room == null) {
+            System.err.println("Room not found: " + roomId);
+            return false;
+        }
+        
+        if (room.getStatus() != Room.RoomStatus.PLAYING) {
+            System.err.println("Room " + roomId + " is not in PLAYING state. Current status: " + room.getStatus());
+            return false;
+        }
+        
+        if (!room.getPlayerEmails().contains(userEmail)) {
+            System.err.println("User " + userEmail + " is not in room " + roomId);
             return false;
         }
         
         Game game = room.getCurrentGame();
-        if (game == null || game.getStatus() != Game.GameStatus.IN_PROGRESS) {
+        if (game == null) {
+            System.err.println("Room " + roomId + " has no current game");
             return false;
         }
         
-        // Check if there are pending confirmations
+        if (game.getStatus() != Game.GameStatus.IN_PROGRESS) {
+            System.err.println("Game in room " + roomId + " is not in progress. Current status: " + game.getStatus());
+            return false;
+        }
+        
+        // 检查是否有等待确认的胜利声明
         Map<String, Boolean> confirmations = winConfirmations.get(roomId);
-        if (confirmations == null || !confirmations.containsKey(userEmail)) {
+        if (confirmations == null) {
+            System.err.println("No pending victory confirmations for room: " + roomId);
             return false;
         }
         
-        // Record action
+        if (!confirmations.containsKey(userEmail)) {
+            System.err.println("User " + userEmail + " is not required to confirm victory in room " + roomId);
+            return false;
+        }
+        
+        // 记录确认/拒绝操作
         GameAction.ActionType actionType = confirm ? GameAction.ActionType.CONFIRM_WIN : GameAction.ActionType.DENY_WIN;
+        System.out.println("Recording " + actionType + " action for user: " + userEmail);
         game.addAction(new GameAction(userEmail, actionType));
         
-        // Update confirmation status
+        // 更新确认状态
         confirmations.put(userEmail, confirm);
+        System.out.println("Updated confirmation status for player " + userEmail + " to " + confirm);
         
-        // Check if all players have confirmed
+        // 确认是否所有玩家都已确认
         boolean allConfirmed = true;
-        for (Boolean status : confirmations.values()) {
-            if (!status) {
+        for (Map.Entry<String, Boolean> entry : confirmations.entrySet()) {
+            if (!entry.getValue()) {
                 allConfirmed = false;
+                System.out.println("Player " + entry.getKey() + " has not confirmed victory");
                 break;
             }
         }
         
-        // If all confirmed, end the game with winner
+        // 查找声明胜利的玩家
+        String claimerEmail = null;
+        for (String playerEmail : room.getPlayerEmails()) {
+            if (!confirmations.containsKey(playerEmail)) {
+                claimerEmail = playerEmail;
+                break;
+            }
+        }
+        
+        if (claimerEmail == null) {
+            System.err.println("Unable to determine who claimed victory in room " + roomId);
+            return false;
+        }
+        
+        // 如果所有玩家都确认，游戏结束，宣布胜利者
         if (allConfirmed) {
-            // Find the player who claimed victory (not in confirmations map)
-            String winnerEmail = null;
-            for (String playerEmail : room.getPlayerEmails()) {
-                if (!confirmations.containsKey(playerEmail)) {
-                    winnerEmail = playerEmail;
-                    break;
-                }
-            }
+            System.out.println("All players confirmed victory for " + claimerEmail + " in room " + roomId);
+            endGame(roomId, claimerEmail);
             
-            if (winnerEmail != null) {
-                endGame(roomId, winnerEmail);
-            }
+            // 发送系统通知
+            webSocketService.sendSystemNotification(roomId, claimerEmail + " 的胜利已被所有玩家确认！");
         } else if (!confirm) {
-            // If any player denies, clear confirmations
+            // 如果任何玩家拒绝，清空确认状态，游戏继续
+            System.out.println("Player " + userEmail + " denied victory for " + claimerEmail + " in room " + roomId);
             confirmations.clear();
             winConfirmations.remove(roomId);
             
-            // Notify all players about the denial
-            webSocketService.sendGameMessage(roomId, "WIN_DENIED", Map.of("denier", userEmail));
+            // 通知所有玩家有人拒绝确认胜利
+            Map<String, Object> denyData = new HashMap<>();
+            denyData.put("denier", userEmail);
+            denyData.put("claimer", claimerEmail);
+            denyData.put("timestamp", LocalDateTime.now().toString());
+            webSocketService.sendGameMessage(roomId, "WIN_DENIED", denyData);
+            
+            // 发送系统通知
+            webSocketService.sendSystemNotification(roomId, userEmail + " 拒绝了 " + claimerEmail + " 的胜利声明！游戏继续。");
+        } else {
+            // 部分玩家已确认，但还有玩家未确认
+            System.out.println("Player " + userEmail + " confirmed victory for " + claimerEmail + 
+                              " in room " + roomId + ", waiting for other players");
+            
+            // 发送系统通知
+            webSocketService.sendSystemNotification(roomId, userEmail + " 确认了 " + claimerEmail + " 的胜利，等待其他玩家确认。");
         }
         
-        // Save room with updated game
+        // 保存房间状态
         roomRepository.save(room);
+        System.out.println("Room state saved after processing victory confirmation");
         
         return true;
     }
 
     /**
-     * End a game
+     * End a game with a winner or as a draw
      * @param roomId Room ID
      * @param winnerEmail Email of the winner, or null for a draw
      */
@@ -420,58 +501,74 @@ public class GameService {
         
         Room room = roomRepository.findById(roomId);
         if (room == null) {
-            System.out.println("Room not found: " + roomId);
+            System.err.println("Room not found: " + roomId);
             return;
         }
         
         if (room.getStatus() != Room.RoomStatus.PLAYING) {
-            System.out.println("Room " + roomId + " is not in PLAYING state. Current status: " + room.getStatus());
+            System.err.println("Room " + roomId + " is not in PLAYING state. Current status: " + room.getStatus());
             return;
         }
         
         Game game = room.getCurrentGame();
         if (game == null) {
-            System.out.println("Room " + roomId + " has no current game");
+            System.err.println("Room " + roomId + " has no current game");
             return;
         }
         
-        // Set game end time and status
+        // 设置游戏结束时间和状态
         game.setEndTime(LocalDateTime.now());
         game.setStatus(Game.GameStatus.FINISHED);
         
-        // Set winner if provided
+        // 设置胜利者（如果有）
         if (winnerEmail != null) {
             game.setWinnerEmail(winnerEmail);
-            System.out.println("Setting winner to: " + winnerEmail);
+            System.out.println("设置胜利者为: " + winnerEmail);
+            
+            // 添加胜利操作到历史记录
+            game.addAction(new GameAction(winnerEmail, GameAction.ActionType.CLAIM_WIN, "游戏胜利"));
+        } else {
+            System.out.println("游戏以平局结束");
         }
         
-        // Update room status
-        System.out.println("Changing room status from PLAYING to WAITING");
+        // 更新房间状态
+        System.out.println("将房间状态从PLAYING更改为WAITING");
         room.setStatus(Room.RoomStatus.WAITING);
         
-        // Save room with updated game
+        // 保存房间状态
         roomRepository.save(room);
-        System.out.println("Room state saved after game end");
+        System.out.println("游戏结束后房间状态已保存");
         
-        // 重新获取房间以确认状态已更新
+        // 确认状态已更新
         Room updatedRoom = roomRepository.findById(roomId);
         if (updatedRoom != null) {
-            System.out.println("Room status after save: " + updatedRoom.getStatus());
-            System.out.println("Game status after save: " + 
+            System.out.println("保存后的房间状态: " + updatedRoom.getStatus());
+            System.out.println("保存后的游戏状态: " + 
                 (updatedRoom.getCurrentGame() != null ? updatedRoom.getCurrentGame().getStatus() : "NULL"));
+        } else {
+            System.err.println("警告：无法在保存后找到房间");
         }
         
-        // Clear win confirmations for this room
+        // 清除该房间的胜利确认状态
         winConfirmations.remove(roomId);
+        System.out.println("已清除房间 " + roomId + " 的胜利确认状态");
         
-        // Notify all players about the game end
+        // 通知所有玩家游戏结束
         Map<String, Object> data = new HashMap<>();
-        data.put("winner", winnerEmail);
+        data.put("winnerEmail", winnerEmail);
         data.put("isDraw", winnerEmail == null);
         data.put("roomId", roomId);
+        data.put("timestamp", LocalDateTime.now().toString());
         webSocketService.sendGameMessage(roomId, "GAME_END", data);
         
-        System.out.println("Game end notification sent for room: " + roomId);
+        // 发送系统通知
+        if (winnerEmail != null) {
+            webSocketService.sendSystemNotification(roomId, "游戏结束！" + winnerEmail + " 获得了胜利！");
+        } else {
+            webSocketService.sendSystemNotification(roomId, "游戏结束！结果是平局。");
+        }
+        
+        System.out.println("房间 " + roomId + " 的游戏结束通知已发送");
     }
 
     /**
@@ -565,8 +662,29 @@ public class GameService {
             
             // Win status
             if (game.getStatus() == Game.GameStatus.FINISHED) {
-                state.put("winner", game.getWinnerEmail());
+                state.put("winnerEmail", game.getWinnerEmail());
                 state.put("isDraw", game.getWinnerEmail() == null);
+            }
+            
+            // 添加胜利声明相关信息
+            Map<String, Boolean> confirmations = winConfirmations.get(roomId);
+            if (confirmations != null && !confirmations.isEmpty()) {
+                // 查找声明胜利的玩家
+                String claimerEmail = null;
+                for (String playerEmail : room.getPlayerEmails()) {
+                    if (!confirmations.containsKey(playerEmail)) {
+                        claimerEmail = playerEmail;
+                        break;
+                    }
+                }
+                
+                if (claimerEmail != null) {
+                    state.put("pendingWinner", claimerEmail);
+                    
+                    // 添加确认状态
+                    Map<String, Boolean> confirmationStatus = new HashMap<>(confirmations);
+                    state.put("winConfirmations", confirmationStatus);
+                }
             }
             
             System.out.println("GameService.getGameState: Returning state for user: " + userEmail + 

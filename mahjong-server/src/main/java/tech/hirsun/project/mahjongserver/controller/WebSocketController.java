@@ -459,27 +459,50 @@ public class WebSocketController extends TextWebSocketHandler {
      */
     private void handleClaimWin(String userEmail, JsonNode data) {
         String roomId = data.get("roomId").asText();
+        LOGGER.info("Handling CLAIM_WIN message from user: " + userEmail + " for room: " + roomId);
         
-        // Claim victory
-        boolean claimed = gameService.claimVictory(roomId, userEmail);
-        if (!claimed) {
-            webSocketService.sendErrorMessage(userEmail, "CLAIM_FAILED", "Failed to claim victory");
+        // 检查房间是否存在
+        Room room = roomService.getRoomById(roomId);
+        if (room == null) {
+            LOGGER.warning("Room not found: " + roomId);
+            webSocketService.sendErrorMessage(userEmail, "CLAIM_FAILED", "房间不存在");
             return;
         }
         
-        // Notify all players about the action
-        Room room = roomService.getRoomById(roomId);
-        if (room != null) {
-            webSocketService.sendGameMessage(roomId, "ACTION", Map.of(
-                "type", "CLAIM_WIN",
-                "playerEmail", userEmail
-            ));
-            
-            // Send updated game state to each player
-            for (String playerEmail : room.getPlayerEmails()) {
-                Map<String, Object> gameState = gameService.getGameState(roomId, playerEmail);
-                webSocketService.sendMessage(playerEmail, "GAME_STATE", gameState);
-            }
+        // 验证用户是否在房间中
+        if (!room.getPlayerEmails().contains(userEmail)) {
+            LOGGER.warning("User " + userEmail + " is not in room " + roomId);
+            webSocketService.sendErrorMessage(userEmail, "CLAIM_FAILED", "您不在此房间中");
+            return;
+        }
+        
+        // 验证房间是否在游戏中
+        if (room.getStatus() != Room.RoomStatus.PLAYING) {
+            LOGGER.warning("Room " + roomId + " is not in playing state: " + room.getStatus());
+            webSocketService.sendErrorMessage(userEmail, "CLAIM_FAILED", "房间不在游戏中");
+            return;
+        }
+        
+        // 声明胜利
+        boolean claimed = gameService.claimVictory(roomId, userEmail);
+        if (!claimed) {
+            LOGGER.warning("Failed to claim victory for user: " + userEmail + " in room: " + roomId);
+            webSocketService.sendErrorMessage(userEmail, "CLAIM_FAILED", "胜利声明失败");
+            return;
+        }
+        
+        LOGGER.info("Victory claim successful for user: " + userEmail + " in room: " + roomId);
+        
+        // 通知所有玩家有关操作
+        webSocketService.sendGameMessage(roomId, "ACTION", Map.of(
+            "type", "CLAIM_WIN",
+            "playerEmail", userEmail
+        ));
+        
+        // 向每个玩家发送更新的游戏状态
+        for (String playerEmail : room.getPlayerEmails()) {
+            Map<String, Object> gameState = gameService.getGameState(roomId, playerEmail);
+            webSocketService.sendMessage(playerEmail, "GAME_STATE", gameState);
         }
     }
 
@@ -490,26 +513,59 @@ public class WebSocketController extends TextWebSocketHandler {
         String roomId = data.get("roomId").asText();
         boolean confirm = data.get("confirm").asBoolean();
         
-        // Confirm or deny victory
-        boolean processed = gameService.confirmVictory(roomId, userEmail, confirm);
-        if (!processed) {
-            webSocketService.sendErrorMessage(userEmail, "CONFIRM_FAILED", "Failed to process confirmation");
+        // winnerEmail参数是可选的，前端可能不提供
+        // 在这种情况下，我们依赖后端的winConfirmations映射来确定谁是声明胜利的玩家
+        String winnerEmail = data.has("winnerEmail") ? data.get("winnerEmail").asText() : null;
+        
+        LOGGER.info("Handling CONFIRM_WIN message from user: " + userEmail + 
+                   " for room: " + roomId + ", confirm: " + confirm + 
+                   (winnerEmail != null ? ", winner: " + winnerEmail : ""));
+        
+        // 检查房间是否存在
+        Room room = roomService.getRoomById(roomId);
+        if (room == null) {
+            LOGGER.warning("Room not found: " + roomId);
+            webSocketService.sendErrorMessage(userEmail, "CONFIRM_FAILED", "房间不存在");
             return;
         }
         
-        // Notify all players about the action
-        Room room = roomService.getRoomById(roomId);
-        if (room != null) {
-            webSocketService.sendGameMessage(roomId, "ACTION", Map.of(
-                "type", confirm ? "CONFIRM_WIN" : "DENY_WIN",
-                "playerEmail", userEmail
-            ));
-            
-            // Send updated game state to each player
-            for (String playerEmail : room.getPlayerEmails()) {
-                Map<String, Object> gameState = gameService.getGameState(roomId, playerEmail);
-                webSocketService.sendMessage(playerEmail, "GAME_STATE", gameState);
-            }
+        // 验证用户是否在房间中
+        if (!room.getPlayerEmails().contains(userEmail)) {
+            LOGGER.warning("User " + userEmail + " is not in room " + roomId);
+            webSocketService.sendErrorMessage(userEmail, "CONFIRM_FAILED", "您不在此房间中");
+            return;
+        }
+        
+        // 验证房间是否在游戏中
+        if (room.getStatus() != Room.RoomStatus.PLAYING) {
+            LOGGER.warning("Room " + roomId + " is not in playing state: " + room.getStatus());
+            webSocketService.sendErrorMessage(userEmail, "CONFIRM_FAILED", "房间不在游戏中");
+            return;
+        }
+        
+        // 确认或拒绝胜利
+        boolean processed = gameService.confirmVictory(roomId, userEmail, confirm);
+        if (!processed) {
+            LOGGER.warning("Failed to process victory confirmation for user: " + userEmail + 
+                          " in room: " + roomId + ", confirm: " + confirm);
+            webSocketService.sendErrorMessage(userEmail, "CONFIRM_FAILED", 
+                                             confirm ? "确认胜利失败" : "拒绝胜利失败");
+            return;
+        }
+        
+        LOGGER.info("Victory " + (confirm ? "confirmation" : "denial") + 
+                   " successful for user: " + userEmail + " in room: " + roomId);
+        
+        // 通知所有玩家有关操作
+        webSocketService.sendGameMessage(roomId, "ACTION", Map.of(
+            "type", confirm ? "CONFIRM_WIN" : "DENY_WIN",
+            "playerEmail", userEmail
+        ));
+        
+        // 向每个玩家发送更新的游戏状态
+        for (String playerEmail : room.getPlayerEmails()) {
+            Map<String, Object> gameState = gameService.getGameState(roomId, playerEmail);
+            webSocketService.sendMessage(playerEmail, "GAME_STATE", gameState);
         }
     }
 

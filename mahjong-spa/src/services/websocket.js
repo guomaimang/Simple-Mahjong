@@ -107,11 +107,25 @@ class WebSocketService {
             
             console.log(`Processing message of type: ${type}, data:`, data);
             
+            // 对WIN_CLAIM消息进行特殊处理
+            if (type === 'WIN_CLAIM') {
+              console.log('收到胜利声明消息，详细数据:', JSON.stringify(data));
+            }
+            
             // 对GAME_STATE消息进行特殊处理
             if (type === 'GAME_STATE') {
               console.log(`Received GAME_STATE message with data:`, data);
               if (!data || (!data.gameState && !data.status)) {
                 console.error('Received empty or invalid game state:', data);
+              }
+              
+              // 检查胜利相关字段
+              if (data.pendingWinner) {
+                console.log('游戏状态包含pendingWinner字段:', data.pendingWinner);
+              }
+              
+              if (data.winConfirmations) {
+                console.log('游戏状态包含winConfirmations字段:', data.winConfirmations);
               }
             }
             

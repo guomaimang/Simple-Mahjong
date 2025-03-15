@@ -41,6 +41,15 @@ export const useGameStore = create((set, get) => ({
         const recentActions = data.recentActions || [];
         const playerHandCounts = data.playerHandCounts || {};
         
+        // 检查胜利相关字段
+        const pendingWinnerFromState = gameState.pendingWinner || null;
+        const winConfirmations = gameState.winConfirmations || {};
+        
+        console.log('解析游戏状态中的胜利信息：', { 
+          pendingWinner: pendingWinnerFromState,
+          hasWinConfirmations: Object.keys(winConfirmations).length > 0
+        });
+        
         console.log('Parsed game state data:', { 
           gameState, 
           handSize: playerHand.length, 
@@ -67,6 +76,12 @@ export const useGameStore = create((set, get) => ({
           error: null,
           tryCount: 0
         });
+        
+        // 如果游戏状态中包含pendingWinner，更新pendingWinner状态
+        if (pendingWinnerFromState) {
+          console.log('从游戏状态中更新pendingWinner:', pendingWinnerFromState);
+          set({ pendingWinner: pendingWinnerFromState });
+        }
         
         console.log('Game state successfully updated in store');
       } catch (error) {
@@ -124,8 +139,31 @@ export const useGameStore = create((set, get) => ({
 
     // 监听胜利声明
     websocketService.addListener('WIN_CLAIM', (data) => {
-      if (data.roomId === roomId) {
-        set({ pendingWinner: data.claimerEmail });
+      console.log('收到WIN_CLAIM消息：', data);
+      
+      // 检查数据结构，适配不同格式
+      const roomIdFromData = data.roomId;
+      let claimerEmail = null;
+      
+      // 尝试从不同位置获取claimerEmail
+      if (data.claimerEmail) {
+        claimerEmail = data.claimerEmail;
+        console.log('从data.claimerEmail获取声明胜利者:', claimerEmail);
+      } else if (data.gameData && data.gameData.claimerEmail) {
+        claimerEmail = data.gameData.claimerEmail;
+        console.log('从data.gameData.claimerEmail获取声明胜利者:', claimerEmail);
+      } else if (data.gameData && data.gameData.playerEmail) {
+        claimerEmail = data.gameData.playerEmail;
+        console.log('从data.gameData.playerEmail获取声明胜利者:', claimerEmail);
+      } else {
+        console.error('无法从WIN_CLAIM消息中获取声明胜利者信息');
+      }
+      
+      if (roomIdFromData === roomId && claimerEmail) {
+        console.log('设置pendingWinner为:', claimerEmail);
+        set({ pendingWinner: claimerEmail });
+      } else {
+        console.log('未设置pendingWinner, roomId匹配:', roomIdFromData === roomId, '获取到claimerEmail:', !!claimerEmail);
       }
     });
 
