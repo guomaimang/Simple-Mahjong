@@ -333,16 +333,44 @@ const Game = () => {
           <span className={`relationship-badge ${badgeClass}`}>{relationship}</span>
         </div>
         <div className="player-tiles">
-          {playerRevealedTiles.map((tile, idx) => (
-            <div key={idx} className="tile revealed">
-              {getTileDisplayName(tile)}
+          {playerRevealedTiles.length > 0 && (
+            <div className="revealed-tiles-section">
+              {playerRevealedTiles.map((tile, idx) => (
+                <div key={`revealed-${idx}`} className="tile revealed">
+                  {getTileDisplayName(tile)}
+                </div>
+              ))}
             </div>
-          ))}
-          {Array.from({ length: playerHandCount }).map((_, idx) => (
-            <div key={`hidden-${idx}`} className="tile hidden">
-              ?
+          )}
+          {playerHandCount > 0 && (
+            <div className="hidden-tiles-section">
+              {Array.from({ length: playerHandCount }).map((_, idx) => (
+                <div key={`hidden-${idx}`} className="tile hidden">
+                  ?
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染空的玩家位置占位符
+  const renderEmptyPlayerArea = (position, relationship) => {
+    const badgeClass = relationship === "上家" ? "shangjiabadge" : 
+                       relationship === "下家" ? "xiajiabadge" : "duijiabadge";
+    
+    return (
+      <div key={position} className={`player-area position-${position} empty`}>
+        <div className="player-info">
+          <span>空位</span>
+          <span className={`relationship-badge ${badgeClass}`}>{relationship}</span>
+        </div>
+        <div className="player-tiles">
+          <div className="hidden-tiles-section">
+            <div className="empty-placeholder">暂无玩家</div>
+          </div>
         </div>
       </div>
     );
@@ -380,35 +408,59 @@ const Game = () => {
       );
     } else if (playerCount === 3) {
       // 3人游戏：按照相对位置渲染
+      // 创建一个包含3个位置的数组，初始都为null
+      const positionedPlayers = [null, null, null];
+      
+      // 根据相对位置放置玩家
+      otherPlayers.forEach(([email, pos]) => {
+        const relPos = getRelativePosition(pos);
+        if (relPos === 1) {
+          positionedPlayers[0] = renderPlayerArea(email, 1, "上家");
+        } else if (relPos === 3) {
+          positionedPlayers[2] = renderPlayerArea(email, 3, "下家");
+        }
+      });
+      
+      // 为空位添加占位符
+      if (!positionedPlayers[0]) positionedPlayers[0] = renderEmptyPlayerArea(1, "上家");
+      // 中间位置永远是占位符
+      positionedPlayers[1] = renderEmptyPlayerArea(2, "对家");
+      if (!positionedPlayers[2]) positionedPlayers[2] = renderEmptyPlayerArea(3, "下家");
+      
       return (
         <div className={otherPlayersClass}>
-          {otherPlayers.map(([email, pos]) => {
-            const relPos = getRelativePosition(pos);
-            // 只渲染位置1和3
-            if (relPos === 1) {
-              return renderPlayerArea(email, 1, "上家");
-            } else if (relPos === 3) {
-              return renderPlayerArea(email, 3, "下家");
-            }
-            return null;
-          })}
+          {positionedPlayers[0]}
+          {positionedPlayers[1]}
+          {positionedPlayers[2]}
         </div>
       );
     } else {
       // 4人游戏：按照相对位置渲染
+      // 创建一个包含3个位置的数组，初始都为null
+      const positionedPlayers = [null, null, null];
+      
+      // 根据相对位置放置玩家
+      otherPlayers.forEach(([email, pos]) => {
+        const relPos = getRelativePosition(pos);
+        if (relPos === 1) {
+          positionedPlayers[0] = renderPlayerArea(email, 1, "上家");
+        } else if (relPos === 2) {
+          positionedPlayers[1] = renderPlayerArea(email, 2, "对家");
+        } else if (relPos === 3) {
+          positionedPlayers[2] = renderPlayerArea(email, 3, "下家");
+        }
+      });
+      
+      // 为空位添加占位符
+      if (!positionedPlayers[0]) positionedPlayers[0] = renderEmptyPlayerArea(1, "上家");
+      if (!positionedPlayers[1]) positionedPlayers[1] = renderEmptyPlayerArea(2, "对家");
+      if (!positionedPlayers[2]) positionedPlayers[2] = renderEmptyPlayerArea(3, "下家");
+      
       return (
         <div className={otherPlayersClass}>
-          {otherPlayers.map(([email, pos]) => {
-            const relPos = getRelativePosition(pos);
-            if (relPos === 1) {
-              return renderPlayerArea(email, 1, "上家");
-            } else if (relPos === 2) {
-              return renderPlayerArea(email, 2, "对家");
-            } else if (relPos === 3) {
-              return renderPlayerArea(email, 3, "下家");
-            }
-            return null;
-          })}
+          {positionedPlayers[0]}
+          {positionedPlayers[1]}
+          {positionedPlayers[2]}
         </div>
       );
     }
