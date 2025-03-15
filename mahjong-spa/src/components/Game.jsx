@@ -220,6 +220,11 @@ const Game = () => {
     navigate(`/rooms/${roomId}`);
   };
 
+  // 处理返回首页（房间列表）
+  const handleBackToHome = () => {
+    navigate('/rooms');
+  };
+
   // 获取玩家位置
   const getPlayerPosition = (email) => {
     if (!gameState || !gameState.playerPositions) return -1;
@@ -753,7 +758,7 @@ const Game = () => {
     <div className="game-container">
       <header className="game-header">
         <h1>房间 #{roomId} - 游戏进行中</h1>
-        <button onClick={handleBackToRoom}>返回房间</button>
+        <button onClick={handleBackToHome}>返回首页</button>
       </header>
 
       <div className="game-table">
