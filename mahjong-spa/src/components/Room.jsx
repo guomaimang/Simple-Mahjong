@@ -172,7 +172,7 @@ const Room = () => {
           <p><strong>创建时间:</strong> {formatTime(currentRoom.creationTime)}</p>
           <p><strong>剩余时间:</strong> {calculateTimeLeft(currentRoom.creationTime)}</p>
           <p><strong>状态:</strong> {currentRoom.status === 'WAITING' ? '等待中' : '游戏中'}</p>
-          {hasJoined && <p><strong>密码:</strong> {currentRoom.password}</p>}
+          {hasJoined && isCreator && <p><strong>密码:</strong> {currentRoom.password}</p>}
         </div>
 
         {!hasJoined ? (

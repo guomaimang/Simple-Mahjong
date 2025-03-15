@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -70,8 +71,20 @@ public class RoomController {
         
         Collection<Room> rooms = roomService.getAllActiveRooms();
         
+        // 移除所有房间的密码信息
+        List<Map<String, Object>> roomsWithoutPasswords = rooms.stream().map(room -> {
+            Map<String, Object> roomData = new HashMap<>();
+            roomData.put("roomId", room.getRoomId());
+            roomData.put("creationTime", room.getCreationTime());
+            roomData.put("creatorEmail", room.getCreatorEmail());
+            roomData.put("playerEmails", room.getPlayerEmails());
+            roomData.put("status", room.getStatus());
+            // 不包含密码
+            return roomData;
+        }).collect(Collectors.toList());
+        
         Map<String, Object> response = new HashMap<>();
-        response.put("rooms", rooms);
+        response.put("rooms", roomsWithoutPasswords);
         
         return ResponseEntity.ok(response);
     }
@@ -97,8 +110,21 @@ public class RoomController {
         
         List<User> players = roomService.getPlayersInRoom(roomId);
         
+        // 创建一个新的Room对象，如果不是房主，则隐藏密码
+        Map<String, Object> roomData = new HashMap<>();
+        roomData.put("roomId", room.getRoomId());
+        roomData.put("creationTime", room.getCreationTime());
+        roomData.put("creatorEmail", room.getCreatorEmail());
+        roomData.put("playerEmails", room.getPlayerEmails());
+        roomData.put("status", room.getStatus());
+        
+        // 只有房主可以看到密码
+        if (user.getEmail().equals(room.getCreatorEmail())) {
+            roomData.put("password", room.getPassword());
+        }
+        
         Map<String, Object> response = new HashMap<>();
-        response.put("room", room);
+        response.put("room", roomData);
         response.put("players", players);
         
         return ResponseEntity.ok(response);
@@ -135,8 +161,21 @@ public class RoomController {
         
         List<User> players = roomService.getPlayersInRoom(roomId);
         
+        // 创建一个新的Room对象，如果不是房主，则隐藏密码
+        Map<String, Object> roomData = new HashMap<>();
+        roomData.put("roomId", room.getRoomId());
+        roomData.put("creationTime", room.getCreationTime());
+        roomData.put("creatorEmail", room.getCreatorEmail());
+        roomData.put("playerEmails", room.getPlayerEmails());
+        roomData.put("status", room.getStatus());
+        
+        // 只有房主可以看到密码
+        if (user.getEmail().equals(room.getCreatorEmail())) {
+            roomData.put("password", room.getPassword());
+        }
+        
         Map<String, Object> response = new HashMap<>();
-        response.put("room", room);
+        response.put("room", roomData);
         response.put("players", players);
         
         return ResponseEntity.ok(response);
