@@ -24,17 +24,52 @@ public class SessionRepository {
      */
     public void registerSession(WebSocketSession session, String userEmail) {
         if (session != null && userEmail != null) {
-            // Remove any existing session for this user
+            // 检查是否已经有相同的会话ID
+            if (sessionMap.containsKey(session.getId())) {
+                System.out.println("Session already registered with ID: " + session.getId() + " for user: " + sessionUserMap.get(session.getId()));
+                // 如果已注册的会话属于不同用户，则先清理旧数据
+                String existingUser = sessionUserMap.get(session.getId());
+                if (!userEmail.equals(existingUser)) {
+                    System.out.println("Replacing existing session mapping from user " + existingUser + " to " + userEmail);
+                    if (existingUser != null) {
+                        userSessionMap.remove(existingUser);
+                    }
+                    sessionUserMap.put(session.getId(), userEmail);
+                }
+                // 更新会话和用户映射
+                sessionMap.put(session.getId(), session);
+                userSessionMap.put(userEmail, session.getId());
+                return;
+            }
+
+            // 检查该用户是否已有其他会话
             String oldSessionId = userSessionMap.get(userEmail);
             if (oldSessionId != null) {
+                System.out.println("User already has a session, replacing old session: " + oldSessionId + " with new session: " + session.getId());
+                
+                // 尝试关闭旧会话
+                WebSocketSession oldSession = sessionMap.get(oldSessionId);
+                if (oldSession != null && oldSession.isOpen()) {
+                    try {
+                        System.out.println("Closing old session: " + oldSessionId);
+                        oldSession.close();
+                    } catch (Exception e) {
+                        System.err.println("Error closing old session: " + e.getMessage());
+                    }
+                }
+                
+                // 移除旧会话映射
                 sessionMap.remove(oldSessionId);
                 sessionUserMap.remove(oldSessionId);
             }
             
-            // Register the new session
+            // 注册新会话
+            System.out.println("Registering new session: " + session.getId() + " for user: " + userEmail);
             sessionMap.put(session.getId(), session);
             userSessionMap.put(userEmail, session.getId());
             sessionUserMap.put(session.getId(), userEmail);
+        } else {
+            System.err.println("Cannot register null session or user email");
         }
     }
 

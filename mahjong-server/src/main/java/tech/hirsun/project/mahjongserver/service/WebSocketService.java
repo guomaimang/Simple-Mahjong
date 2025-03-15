@@ -35,23 +35,49 @@ public class WebSocketService {
      * @return true if message sent, false otherwise
      */
     public boolean sendMessage(String userEmail, String type, Object data) {
-        WebSocketSession session = sessionRepository.getSessionByUser(userEmail);
-        if (session != null && session.isOpen()) {
-            try {
-                Map<String, Object> message = new HashMap<>();
-                message.put("type", type);
-                message.put("data", data);
-                message.put("timestamp", System.currentTimeMillis());
-                
-                String payload = objectMapper.writeValueAsString(message);
-                session.sendMessage(new TextMessage(payload));
-                return true;
-            } catch (IOException e) {
-                // Log error
-                return false;
-            }
+        if (userEmail == null) {
+            System.err.println("Cannot send message to null user email");
+            return false;
         }
-        return false;
+        
+        WebSocketSession session = sessionRepository.getSessionByUser(userEmail);
+        if (session == null) {
+            System.err.println("No WebSocket session found for user: " + userEmail);
+            return false;
+        }
+        
+        if (!session.isOpen()) {
+            System.err.println("WebSocket session is not open for user: " + userEmail);
+            return false;
+        }
+        
+        try {
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", type);
+            message.put("data", data);
+            message.put("timestamp", System.currentTimeMillis());
+            
+            String payload = objectMapper.writeValueAsString(message);
+            System.out.println("Sending WebSocket message to " + userEmail + ": " + type + " (size: " + payload.length() + " bytes)");
+            
+            synchronized (session) {
+                if (session.isOpen()) {
+                    session.sendMessage(new TextMessage(payload));
+                    return true;
+                } else {
+                    System.err.println("Session closed while trying to send message to: " + userEmail);
+                    return false;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error sending WebSocket message to " + userEmail + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            System.err.println("Unexpected error sending WebSocket message to " + userEmail + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     /**

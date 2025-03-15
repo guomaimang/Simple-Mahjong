@@ -13,35 +13,64 @@ export const useGameStore = create((set, get) => ({
   loading: false,
   error: null,
   tryCount: 0,
+  oneTimeListeners: [],
 
   // 初始化游戏状态监听
   initializeListeners: (roomId) => {
+    // 首先清除任何现有的监听器，以防重复
+    get().removeListeners();
+    
     // 监听游戏状态更新
     websocketService.addListener('GAME_STATE', (data) => {
-      console.log('Processing GAME_STATE in store:', data);
+      console.log('Processing GAME_STATE in store, raw data:', data);
       
-      // 处理可能的不同数据结构
-      const gameState = data.gameState || data;
-      const playerHand = data.hand || data.playerHand || [];
-      const revealedTiles = data.revealedTiles || {};
-      const discardPile = data.discardPile || [];
-      const drawPileCount = data.remainingTiles || data.drawPileCount || 0;
-      const recentActions = data.recentActions || [];
+      // 防止无效数据
+      if (!data) {
+        console.error('Received null or undefined game state');
+        return;
+      }
       
-      console.log('Setting game state:', { 
-        gameState, playerHand, revealedTiles, discardPile, drawPileCount, recentActions 
-      });
-      
-      set({
-        gameState,
-        playerHand,
-        revealedTiles,
-        discardPile,
-        drawPileCount,
-        recentActions,
-        loading: false,
-        error: null
-      });
+      try {
+        // 处理可能的不同数据结构
+        const gameState = data.gameState || data;
+        const playerHand = data.hand || data.playerHand || [];
+        const revealedTiles = data.revealedTiles || {};
+        const discardPile = data.discardPile || [];
+        const drawPileCount = data.remainingTiles || data.drawPileCount || 0;
+        const recentActions = data.recentActions || [];
+        
+        console.log('Parsed game state data:', { 
+          gameState, 
+          handSize: playerHand.length, 
+          discardPileSize: discardPile.length,
+          drawPileCount
+        });
+        
+        // 确保gameState包含必要的字段
+        if (!gameState.roomId) {
+          gameState.roomId = roomId;
+        }
+        
+        set({
+          gameState,
+          playerHand,
+          revealedTiles,
+          discardPile,
+          drawPileCount,
+          recentActions,
+          loading: false,
+          error: null,
+          tryCount: 0
+        });
+        
+        console.log('Game state successfully updated in store');
+      } catch (error) {
+        console.error('Error processing game state:', error, data);
+        set({ 
+          loading: false, 
+          error: '处理游戏状态时出错：' + error.message 
+        });
+      }
     });
 
     // 添加ACTION消息监听器
@@ -113,6 +142,13 @@ export const useGameStore = create((set, get) => ({
     websocketService.removeListener('WIN_CLAIM');
     websocketService.removeListener('GAME_ENDED');
     websocketService.removeListener('ERROR');
+    
+    // 清除所有一次性监听器
+    const oneTimeListeners = get().oneTimeListeners;
+    oneTimeListeners.forEach(listener => {
+      websocketService.removeListener('GAME_STATE', listener);
+    });
+    set({ oneTimeListeners: [] });
   },
 
   // 获取游戏状态
@@ -139,6 +175,13 @@ export const useGameStore = create((set, get) => ({
     }
     
     try {
+      // 首先检查WebSocket连接状态
+      if (!websocketService.isConnected()) {
+        console.log('WebSocket not connected, reconnecting...');
+        await websocketService.connect();
+      }
+      
+      console.log(`Attempting to fetch game state for room ${roomId}, attempt #${tryCount + 1}`);
       await websocketService.getGameState(roomId);
       set({ tryCount: tryCount + 1 });
       
@@ -148,18 +191,39 @@ export const useGameStore = create((set, get) => ({
       return new Promise((resolve) => {
         if (currentState && currentState.roomId === roomId) {
           // 如果已经有状态了，直接返回
+          console.log('Found existing game state, returning immediately');
           set({ loading: false, tryCount: 0 });
           resolve(currentState);
         } else {
           // 否则设置超时再次尝试
+          console.log(`Setting timeout for game state response, attempt #${tryCount + 1}`);
+          
           const timeout = setTimeout(async () => {
             const newState = get().gameState;
+            
             if (!newState || newState.roomId !== roomId) {
-              console.log('No game state received after timeout, retrying...');
-              // 不直接调用fetchGameState以避免无限循环
+              console.log(`No game state received after timeout, attempt #${tryCount + 1}`);
+              
+              // 手动再次请求游戏状态，但避免无限循环
               set({ loading: false });
+              // 重新连接WebSocket，然后尝试再次获取游戏状态
+              websocketService.disconnect();
+              setTimeout(async () => {
+                try {
+                  await websocketService.connect();
+                  
+                  // 短暂延迟后再次请求游戏状态
+                  setTimeout(() => {
+                    console.log('Retrying game state request after reconnection');
+                    websocketService.getGameState(roomId);
+                  }, 1000);
+                } catch (error) {
+                  console.error('Reconnection failed:', error);
+                }
+              }, 1000);
             } else {
               // 已经收到状态，重置尝试计数
+              console.log('Game state received within timeout period');
               set({ tryCount: 0 });
             }
             resolve(get().gameState);
@@ -167,18 +231,36 @@ export const useGameStore = create((set, get) => ({
           
           // 添加一次性监听器，如果收到状态更新则清除超时
           const listener = (data) => {
+            console.log('One-time listener received data:', data);
+            
             if (data && (data.roomId === roomId || (data.gameState && data.gameState.roomId === roomId))) {
+              console.log('Received game state via one-time listener, clearing timeout');
               clearTimeout(timeout);
+              
+              // 保存到oneTimeListeners数组中，以便后续清理
+              const listeners = get().oneTimeListeners;
+              const updatedListeners = listeners.filter(l => l !== listener);
+              set({ oneTimeListeners: updatedListeners });
+              
               websocketService.removeListener('GAME_STATE', listener);
               set({ loading: false, tryCount: 0 });
               resolve(data);
+            } else {
+              console.log('One-time listener data did not match criteria, ignoring');
             }
           };
           
+          // 添加到一次性监听器列表中，以便以后清理
+          const listeners = get().oneTimeListeners;
+          listeners.push(listener);
+          set({ oneTimeListeners: listeners });
+          
+          console.log('Added one-time listener for GAME_STATE');
           websocketService.addListener('GAME_STATE', listener);
         }
       });
     } catch (error) {
+      console.error('Error in fetchGameState:', error);
       set({ 
         loading: false, 
         error: error.message,
@@ -294,6 +376,7 @@ export const useGameStore = create((set, get) => ({
 
   // 重置游戏状态
   resetGameState: () => {
+    console.log('Resetting game state');
     set({
       gameState: null,
       playerHand: [],
@@ -305,6 +388,7 @@ export const useGameStore = create((set, get) => ({
       loading: false,
       error: null,
       tryCount: 0,
+      oneTimeListeners: []
     });
   },
 })); 

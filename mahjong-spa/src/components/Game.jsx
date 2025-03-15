@@ -51,6 +51,8 @@ const Game = () => {
           console.log('WebSocket not connected, connecting...');
           await websocketService.connect();
           console.log('WebSocket connected successfully');
+          // 连接成功后等待一会儿确保连接稳定
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
         
         // 获取房间信息
@@ -66,11 +68,29 @@ const Game = () => {
         
         // 获取游戏状态
         console.log('Fetching initial game state');
-        await fetchGameState(roomId);
-        
-        console.log('Game initialization completed');
+        try {
+          await fetchGameState(roomId);
+          console.log('Game initialization completed');
+        } catch (error) {
+          console.error('Failed to fetch initial game state:', error);
+          // 如果第一次获取失败，尝试重新连接WebSocket并再次获取
+          console.log('First attempt failed, trying with full reconnection');
+          websocketService.disconnect();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await websocketService.connect();
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // 重新初始化监听器
+          removeListeners();
+          initializeListeners(roomId);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // 再次尝试获取游戏状态
+          await fetchGameState(roomId);
+        }
       } catch (error) {
         console.error('Failed to initialize game:', error);
+        set({ error: `初始化游戏失败：${error.message}` });
       }
     };
 
@@ -91,16 +111,23 @@ const Game = () => {
   
   // 添加一个游戏状态检查的效果
   useEffect(() => {
+    let reconnectAttempt = 0;
+    const maxReconnectAttempts = 3;
+    
     // 如果加载超过10秒还没有游戏状态，尝试重新连接
     if (loading) {
       const timeout = setTimeout(() => {
-        if (loading && !gameState) {
-          console.log('Game loading timeout, trying to reconnect...');
+        if (loading && !gameState && reconnectAttempt < maxReconnectAttempts) {
+          reconnectAttempt++;
+          console.log(`Game loading timeout, trying to reconnect (attempt ${reconnectAttempt})...`);
           websocketService.disconnect();
-          setTimeout(() => {
-            websocketService.connect().then(() => {
-              fetchGameState(roomId);
-            });
+          setTimeout(async () => {
+            try {
+              await websocketService.connect();
+              setTimeout(() => fetchGameState(roomId), 500);
+            } catch (error) {
+              console.error('Reconnection failed:', error);
+            }
           }, 1000);
         }
       }, 10000);
@@ -526,15 +553,41 @@ const Game = () => {
   };
 
   if (loading) {
-    return <div className="loading">加载中...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-message">
+          <h2>正在加载游戏状态...</h2>
+          <p>如果长时间无响应，请<button onClick={() => window.location.reload()}>刷新页面</button>重试</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="error-message">{error}</div>;
+    return (
+      <div className="error-container">
+        <div className="error-message">
+          <h2>出错了</h2>
+          <p>{error}</p>
+          <div className="error-actions">
+            <button onClick={() => window.location.reload()}>刷新页面</button>
+            <button onClick={handleBackToRoom}>返回房间</button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!gameState) {
-    return <div className="loading">正在加载游戏状态...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-message">
+          <h2>正在加载游戏状态...</h2>
+          <p>如果长时间无响应，请<button onClick={() => window.location.reload()}>刷新页面</button>重试</p>
+          <p>或者尝试<button onClick={handleBackToRoom}>返回房间</button>后重新进入游戏</p>
+        </div>
+      </div>
+    );
   }
 
   return (

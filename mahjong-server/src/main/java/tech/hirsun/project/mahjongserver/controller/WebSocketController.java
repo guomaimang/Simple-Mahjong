@@ -453,13 +453,14 @@ public class WebSocketController extends TextWebSocketHandler {
      */
     private void handleGetGameState(String userEmail, JsonNode data) {
         String roomId = data.get("roomId").asText();
+        String requestId = data.has("requestId") ? data.get("requestId").asText() : "unknown";
         
-        LOGGER.info("Handling GET_GAME_STATE request for room: " + roomId + " from user: " + userEmail);
+        LOGGER.info("Handling GET_GAME_STATE request for room: " + roomId + " from user: " + userEmail + ", requestId: " + requestId);
         
         // 检查这个用户是否已经在处理游戏状态请求
         String requestKey = userEmail + ":" + roomId;
         if (processingGameStateRequests.contains(requestKey)) {
-            LOGGER.info("Already processing GET_GAME_STATE for user: " + userEmail + " in room: " + roomId);
+            LOGGER.info("Already processing GET_GAME_STATE for user: " + userEmail + " in room: " + roomId + ", skipping");
             return;
         }
         
@@ -467,6 +468,13 @@ public class WebSocketController extends TextWebSocketHandler {
         processingGameStateRequests.add(requestKey);
         
         try {
+            // 重新检查用户会话是否仍然有效
+            WebSocketSession session = sessionRepository.getSessionByUser(userEmail);
+            if (session == null || !session.isOpen()) {
+                LOGGER.warning("User session invalid or closed for: " + userEmail);
+                return;
+            }
+            
             // Get game state
             Map<String, Object> gameState = gameService.getGameState(roomId, userEmail);
             if (gameState.isEmpty()) {
@@ -480,9 +488,28 @@ public class WebSocketController extends TextWebSocketHandler {
                 gameState.put("roomId", roomId);
             }
             
+            // 添加请求ID以便前端能够匹配请求和响应
+            if (data.has("requestId")) {
+                gameState.put("requestId", data.get("requestId").asText());
+            }
+            
             // Send game state to the player
-            LOGGER.info("Sending game state to user: " + userEmail + ", state size: " + gameState.size() + " entries");
-            webSocketService.sendMessage(userEmail, "GAME_STATE", gameState);
+            LOGGER.info("Sending game state to user: " + userEmail + ", state size: " + gameState.size() + " entries, requestId: " + requestId);
+            boolean sent = webSocketService.sendMessage(userEmail, "GAME_STATE", gameState);
+            
+            if (!sent) {
+                LOGGER.warning("Failed to send game state to user: " + userEmail + ", session may be invalid");
+                // 尝试重新发送一次
+                session = sessionRepository.getSessionByUser(userEmail);
+                if (session != null && session.isOpen()) {
+                    LOGGER.info("Retrying to send game state...");
+                    webSocketService.sendMessage(userEmail, "GAME_STATE", gameState);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.severe("Error handling GET_GAME_STATE: " + e.getMessage());
+            e.printStackTrace();
+            webSocketService.sendErrorMessage(userEmail, "STATE_ERROR", "Error processing game state: " + e.getMessage());
         } finally {
             // 移除处理标记
             processingGameStateRequests.remove(requestKey);
