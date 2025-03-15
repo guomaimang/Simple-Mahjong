@@ -213,18 +213,6 @@
   font-weight: 500;
 }
 
-.hand-title button {
-  padding: 0.25rem 0.5rem;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.hand-title button:hover {
-  background-color: #e0e0e0;
-}
-
 .tiles-container {
   display: flex;
   flex-wrap: wrap;

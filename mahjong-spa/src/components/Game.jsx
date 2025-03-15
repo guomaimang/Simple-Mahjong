@@ -31,7 +31,6 @@ const Game = () => {
     revealTiles,
     claimWin,
     confirmWin,
-    sortPlayerHand,
     resetGameState
   } = useGameStore();
 
@@ -357,7 +356,6 @@ const Game = () => {
         
         <div className="hand-title">
           <span>我的手牌</span>
-          <button onClick={sortPlayerHand}>排序</button>
         </div>
         <div className="tiles-container">
           {playerHand.map((tile, index) => (
