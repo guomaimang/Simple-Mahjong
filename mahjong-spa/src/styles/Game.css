@@ -272,6 +272,7 @@
   overflow-y: auto;
   max-height: 250px;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 /* 添加弃牌区拖放样式 */
@@ -297,22 +298,31 @@
   max-height: calc(100% - 30px); /* 减去标题高度 */
 }
 
+/* 弃牌区提示样式 */
 .discard-hint {
-  text-align: center;
-  padding: 6px;
-  margin-bottom: 10px;
-  background-color: #ffecb3;
-  border: 1px dashed #ffa000;
-  border-radius: 4px;
+  display: block !important;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   color: #e65100;
   font-size: 0.9rem;
+  pointer-events: none; /* 不影响拖拽操作 */
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(255, 236, 179, 0.8);
+  border-radius: 5px;
+  width: 80%;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+  z-index: 0;
 }
 
 .discard-pile.drag-over .discard-hint {
-  background-color: #e8f4ff;
-  border-color: #0078ff;
+  opacity: 0.8;
+  background-color: rgba(232, 244, 255, 0.9);
   color: #0078ff;
-  font-weight: bold;
 }
 
 .recent-actions {
@@ -487,6 +497,7 @@
   border-radius: 8px;
   border: 1px solid #ffe082;
   transition: all 0.2s ease-in-out;
+  position: relative; /* 为拖拽提示定位 */
 }
 
 .my-hand-tiles.hand-drag-over {
@@ -502,8 +513,9 @@
 }
 
 .tile[draggable="true"]:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  animation: tile-hover 0.5s ease;
+  z-index: 5;
+  cursor: grab;
 }
 
 .tile[draggable="true"]:active {
@@ -511,9 +523,25 @@
 }
 
 .tile.dragging {
+  z-index: 10;
   opacity: 0.6;
   transform: scale(1.05);
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 确保悬停时的牌也有较高的z-index */
+.tile:hover {
+  z-index: 5;
+  transform: translateY(-5px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 还要确保拖拽悬停目标的牌也有较高的z-index */
+.tile.drag-over {
+  z-index: 5;
+  background-color: #e8f4ff;
+  box-shadow: 0 0 5px rgba(0, 120, 255, 0.5);
+  border: 2px dashed #0078ff;
 }
 
 /* 调整明牌的样式使其与手牌不同 */
@@ -802,35 +830,15 @@
   100% { transform: translateY(0); }
 }
 
-.tile[draggable="true"]:hover {
-  animation: tile-hover 0.5s ease;
-  z-index: 10;
-  cursor: grab;
+/* 确保水印提示的z-index是最低的 */
+.discard-hint, .my-revealed-tiles .drag-area-hint, .my-hand-tiles .drag-area-hint {
+  z-index: 0;
 }
 
-.tile[draggable="true"]:active {
-  cursor: grabbing;
-}
-
-.drag-area-hint {
-  text-align: center;
-  padding: 8px;
-  margin-bottom: 10px;
-  background-color: #e8f5e9;
-  border: 1px dashed #4caf50;
-  border-radius: 4px;
-  color: #43a047;
-  font-size: 0.9rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.my-hand-tiles.hand-drag-over .drag-area-hint {
-  background-color: #e8f4ff;
-  border-color: #0078ff;
-  color: #0078ff;
-  font-weight: bold;
+/* 容器应该在水印上方，但在牌下方 */
+.tiles-container {
+  position: relative;
+  z-index: 1;
 }
 
 .hand-title {
@@ -874,9 +882,12 @@
   font-weight: 500;
   transition: all 0.2s;
   font-size: 0.9rem;
+  position: relative;
+  z-index: 2;
 }
 
 .tile:hover {
+  z-index: 5;
   transform: translateY(-5px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
@@ -899,4 +910,44 @@
 
 .tile.revealed {
   background-color: #e8f5e9;
+}
+
+/* 手牌区域提示样式 */
+.my-hand-tiles .drag-area-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ff8f00;
+  font-size: 0.9rem;
+  pointer-events: none; /* 不影响拖拽操作 */
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(255, 248, 225, 0.8);
+  border-radius: 5px;
+  width: 80%;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+  z-index: 1;
+  display: block; /* 确保始终显示 */
+}
+
+.my-hand-tiles.hand-drag-over .drag-area-hint {
+  opacity: 0.8;
+  background-color: rgba(255, 236, 179, 0.9);
+  color: #ff8f00;
+}
+
+/* 调整手牌区为相对定位 */
+.my-hand-tiles {
+  position: relative;
+  /* ... existing styles ... */
+}
+
+/* 修改旧的拖拽提示，使其完全隐藏，不会影响新的样式 */
+@media screen { /* 使用媒体查询确保这些样式优先级更高 */
+  .drag-area-hint:not(.my-hand-tiles .drag-area-hint):not(.my-revealed-tiles .drag-area-hint) {
+    display: none !important;
+  }
 } 
