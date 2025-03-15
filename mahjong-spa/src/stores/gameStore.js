@@ -54,16 +54,11 @@ export const useGameStore = create((set, get) => ({
           gameState.roomId = roomId;
         }
         
-        // 对明牌进行排序
-        const sortedRevealedTiles = {};
-        Object.entries(revealedTiles).forEach(([email, tiles]) => {
-          sortedRevealedTiles[email] = get().sortTiles(tiles);
-        });
-        
+        // 删除对明牌的排序，直接使用原始明牌数据
         set({
           gameState,
           playerHand,
-          revealedTiles: sortedRevealedTiles,
+          revealedTiles, // 使用未排序的明牌数据
           playerHandCounts,
           discardPile,
           drawPileCount,
