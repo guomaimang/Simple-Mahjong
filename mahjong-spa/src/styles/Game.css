@@ -656,9 +656,9 @@
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -666,13 +666,14 @@
 }
 
 .win-confirmation-modal {
-  background-color: white;
+  background-color: #fff;
+  padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
   width: 90%;
-  max-width: 400px;
-  padding: 1.5rem;
-  text-align: center;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .win-confirmation-modal h2 {
@@ -712,6 +713,48 @@
 
 .deny-button:hover {
   background-color: #e53935;
+}
+
+/* 新增：胜利者牌的显示样式 */
+.winner-tiles-display {
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.tiles-section {
+  margin-bottom: 15px;
+}
+
+.tiles-section h3 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #555;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+.tiles-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tile-display {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px 8px;
+  min-width: 30px;
+  text-align: center;
+  font-size: 14px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+.relationship-text {
+  color: #888;
+  font-size: 0.9em;
 }
 
 /* 游戏结束画面 */
@@ -795,12 +838,6 @@
 
 .back-button:hover {
   background-color: #d32f2f;
-}
-
-.relationship-text {
-  font-size: 14px;
-  color: #888;
-  font-style: italic;
 }
 
 .loading {

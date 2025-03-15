@@ -110,6 +110,29 @@ class WebSocketService {
             // 对WIN_CLAIM消息进行特殊处理
             if (type === 'WIN_CLAIM') {
               console.log('收到胜利声明消息，详细数据:', JSON.stringify(data));
+              // 检查牌数据
+              const gameData = data.gameData || {};
+              console.log('WIN_CLAIM gameData:', gameData);
+              
+              if (gameData.handTiles) {
+                console.log('手牌数据:', gameData.handTiles);
+                console.log('手牌数量:', gameData.handTiles.length);
+                if (gameData.handTiles.length > 0) {
+                  console.log('第一张手牌:', gameData.handTiles[0]);
+                }
+              } else {
+                console.log('无手牌数据');
+              }
+              
+              if (gameData.revealedTiles) {
+                console.log('明牌数据:', gameData.revealedTiles);
+                console.log('明牌数量:', gameData.revealedTiles.length);
+                if (gameData.revealedTiles.length > 0) {
+                  console.log('第一张明牌:', gameData.revealedTiles[0]);
+                }
+              } else {
+                console.log('无明牌数据');
+              }
             }
             
             // 对GAME_STATE消息进行特殊处理

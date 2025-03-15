@@ -106,7 +106,26 @@ public class WebSocketService {
     public void sendGameMessage(String roomId, String type, Object data) {
         Map<String, Object> gameData = new HashMap<>();
         gameData.put("roomId", roomId);
-        gameData.put("gameData", data);
+        
+        // 特殊处理WIN_CLAIM消息，避免嵌套gameData导致的数据访问问题
+        if ("WIN_CLAIM".equals(type)) {
+            // 对于WIN_CLAIM消息，直接传递数据而不是嵌套在gameData中
+            if (data instanceof Map) {
+                Map<?, ?> dataMap = (Map<?, ?>) data;
+                // 复制所有键值对到顶层
+                dataMap.forEach((key, value) -> {
+                    gameData.put(key.toString(), value);
+                });
+                System.out.println("Sending WIN_CLAIM with direct data access, keys: " + gameData.keySet());
+            } else {
+                // 如果不是Map，仍然使用标准格式
+                gameData.put("gameData", data);
+            }
+        } else {
+            // 其他消息类型仍然使用标准格式
+            gameData.put("gameData", data);
+        }
+        
         sendRoomMessage(roomId, type, gameData);
     }
 

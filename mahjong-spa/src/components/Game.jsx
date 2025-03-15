@@ -32,7 +32,9 @@ const Game = () => {
     hideTiles,
     claimWin,
     confirmWin,
-    resetGameState
+    resetGameState,
+    winnerHandTiles,
+    winnerRevealedTiles
   } = useGameStore();
 
   const [selectedTiles, setSelectedTiles] = useState([]);
@@ -781,6 +783,9 @@ const Game = () => {
   const renderWinConfirmation = () => {
     if (!showWinConfirmation) return null;
 
+    // 从gameStore获取胜利者的牌信息
+    const { winnerHandTiles, winnerRevealedTiles } = useGameStore.getState();
+
     // 获取宣布胜利者的关系标识
     let relationship = "";
     if (user.email === pendingWinner) {
@@ -802,6 +807,32 @@ const Game = () => {
             {relationship && <span className="relationship-text">{` (${relationship})`}</span>}
             宣布自己胜利了！
           </p>
+          
+          {/* 显示胜利者的牌 */}
+          <div className="winner-tiles-display">
+            <div className="tiles-section">
+              <h3>手牌（暗牌）</h3>
+              <div className="tiles-grid">
+                {winnerHandTiles.map((tile, index) => (
+                  <div key={`hand-${index}`} className="tile-display">
+                    {getTileDisplayName(tile)}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="tiles-section">
+              <h3>明牌</h3>
+              <div className="tiles-grid">
+                {winnerRevealedTiles.map((tile, index) => (
+                  <div key={`revealed-${index}`} className="tile-display">
+                    {getTileDisplayName(tile)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
           <p>你同意吗？</p>
           <div className="confirmation-buttons">
             <button 

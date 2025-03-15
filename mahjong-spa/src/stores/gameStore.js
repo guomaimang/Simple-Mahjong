@@ -15,6 +15,8 @@ export const useGameStore = create((set, get) => ({
   error: null,
   tryCount: 0,
   oneTimeListeners: [],
+  winnerHandTiles: [],
+  winnerRevealedTiles: [],
 
   // 初始化游戏状态监听
   initializeListeners: (roomId) => {
@@ -159,9 +161,45 @@ export const useGameStore = create((set, get) => ({
         console.error('无法从WIN_CLAIM消息中获取声明胜利者信息');
       }
       
+      // 获取胜利者的牌信息，考虑不同的数据结构
+      let handTiles = [];
+      let revealedTiles = [];
+      
+      // 直接在data中的情况
+      if (Array.isArray(data.handTiles)) {
+        console.log('从data.handTiles获取手牌');
+        handTiles = data.handTiles;
+      } 
+      // 在gameData中的情况 
+      else if (data.gameData && Array.isArray(data.gameData.handTiles)) {
+        console.log('从data.gameData.handTiles获取手牌');
+        handTiles = data.gameData.handTiles;
+      }
+      
+      // 直接在data中的情况
+      if (Array.isArray(data.revealedTiles)) {
+        console.log('从data.revealedTiles获取明牌');
+        revealedTiles = data.revealedTiles;
+      } 
+      // 在gameData中的情况
+      else if (data.gameData && Array.isArray(data.gameData.revealedTiles)) {
+        console.log('从data.gameData.revealedTiles获取明牌');
+        revealedTiles = data.gameData.revealedTiles;
+      }
+      
+      console.log('解析后的手牌数量:', handTiles.length);
+      console.log('解析后的明牌数量:', revealedTiles.length);
+      
       if (roomIdFromData === roomId && claimerEmail) {
         console.log('设置pendingWinner为:', claimerEmail);
-        set({ pendingWinner: claimerEmail });
+        console.log('胜利者手牌:', handTiles);
+        console.log('胜利者明牌:', revealedTiles);
+        
+        set({ 
+          pendingWinner: claimerEmail,
+          winnerHandTiles: handTiles,
+          winnerRevealedTiles: revealedTiles
+        });
       } else {
         console.log('未设置pendingWinner, roomId匹配:', roomIdFromData === roomId, '获取到claimerEmail:', !!claimerEmail);
       }
@@ -176,7 +214,9 @@ export const useGameStore = create((set, get) => ({
             status: 'FINISHED',
             winnerEmail: data.winnerEmail
           },
-          pendingWinner: null
+          pendingWinner: null,
+          winnerHandTiles: [],
+          winnerRevealedTiles: []
         });
       }
     });
@@ -477,11 +517,10 @@ export const useGameStore = create((set, get) => ({
 
   // 重置游戏状态
   resetGameState: () => {
-    console.log('Resetting game state');
     set({
       gameState: null,
       playerHand: [],
-      revealedTiles: {},
+      revealedTiles: [],
       playerHandCounts: {},
       discardPile: [],
       drawPileCount: 0,
@@ -490,7 +529,9 @@ export const useGameStore = create((set, get) => ({
       loading: false,
       error: null,
       tryCount: 0,
-      oneTimeListeners: []
+      oneTimeListeners: [],
+      winnerHandTiles: [],
+      winnerRevealedTiles: []
     });
   },
 })); 

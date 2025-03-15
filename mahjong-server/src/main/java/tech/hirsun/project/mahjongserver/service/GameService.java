@@ -356,11 +356,20 @@ public class GameService {
         roomRepository.save(room);
         System.out.println("Room state saved after victory claim");
         
+        // 获取宣告胜利玩家的所有牌信息（明牌和暗牌）
+        List<Tile> handTiles = game.getPlayerHand(userEmail);
+        List<Tile> revealedTiles = game.getPlayerRevealedTiles().getOrDefault(userEmail, new ArrayList<>());
+        
         // 通知所有玩家有人声明胜利
         System.out.println("Sending WIN_CLAIM notification to all players in room " + roomId);
         Map<String, Object> claimData = new HashMap<>();
         claimData.put("claimerEmail", userEmail);
         claimData.put("timestamp", LocalDateTime.now().toString());
+        
+        // 添加牌信息
+        claimData.put("handTiles", handTiles);
+        claimData.put("revealedTiles", revealedTiles);
+        
         webSocketService.sendGameMessage(roomId, "WIN_CLAIM", claimData);
         
         // 发送系统通知
