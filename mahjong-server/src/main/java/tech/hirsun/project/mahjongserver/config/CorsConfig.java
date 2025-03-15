@@ -20,8 +20,12 @@ public class CorsConfig {
         // 允许的来源
         config.addAllowedOrigin("http://localhost:5173");
         
-        // 允许的HTTP方法
-        config.addAllowedMethod("*");
+        // 允许的HTTP方法，明确包含OPTIONS预检请求
+        config.addAllowedMethod("GET");
+        config.addAllowedMethod("POST");
+        config.addAllowedMethod("PUT");
+        config.addAllowedMethod("DELETE");
+        config.addAllowedMethod("OPTIONS");
         
         // 允许的头信息
         config.addAllowedHeader("*");
