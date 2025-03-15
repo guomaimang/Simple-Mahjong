@@ -11,6 +11,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import tech.hirsun.project.mahjongserver.model.Room;
 import tech.hirsun.project.mahjongserver.repository.RoomRepository;
@@ -25,7 +26,8 @@ public class WebSocketService {
     @Autowired
     private RoomRepository roomRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .registerModule(new JavaTimeModule());
 
     /**
      * Send a message to a specific user

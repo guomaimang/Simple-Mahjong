@@ -16,6 +16,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import tech.hirsun.project.mahjongserver.model.Game;
 import tech.hirsun.project.mahjongserver.model.Room;
@@ -46,7 +47,8 @@ public class WebSocketController extends TextWebSocketHandler {
     @Autowired
     private WebSocketService webSocketService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .registerModule(new JavaTimeModule());
 
     // 存储正在处理GET_GAME_STATE请求的用户
     private final Set<String> processingGameStateRequests = ConcurrentHashMap.newKeySet();

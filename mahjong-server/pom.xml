@@ -118,6 +118,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- 添加 Jackson JSR310 支持，用于序列化 Java 8 日期/时间类型 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
     </dependencies>
 
 
