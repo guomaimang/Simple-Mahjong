@@ -2,6 +2,13 @@ package tech.hirsun.project.mahjongserver.model;
 
 import java.util.Objects;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Tile {
     private TileType type;
     private int value;
@@ -13,39 +20,6 @@ public class Tile {
         TIAO,   // 条子
         FENG,   // 风牌 (东南西北)
         JIAN    // 箭牌 (中发白)
-    }
-
-    public Tile() {
-    }
-
-    public Tile(TileType type, int value, int id) {
-        this.type = type;
-        this.value = value;
-        this.id = id;
-    }
-
-    public TileType getType() {
-        return type;
-    }
-
-    public void setType(TileType type) {
-        this.type = type;
-    }
-
-    public int getValue() {
-        return value;
-    }
-
-    public void setValue(int value) {
-        this.value = value;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getDisplayName() {

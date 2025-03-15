@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Data;
 import tech.hirsun.project.mahjongserver.model.Room;
 import tech.hirsun.project.mahjongserver.model.User;
 import tech.hirsun.project.mahjongserver.service.AuthService;
@@ -188,15 +189,8 @@ public class RoomController {
     }
 
     // Request classes
+    @Data
     public static class JoinRoomRequest {
         private String password;
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
     }
 } 

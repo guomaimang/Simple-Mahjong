@@ -9,19 +9,22 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class Game {
-    private String roomId;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-    private String dealerEmail;
+    @Getter @Setter private String roomId;
+    @Getter @Setter private LocalDateTime startTime;
+    @Getter @Setter private LocalDateTime endTime;
+    @Getter @Setter private String dealerEmail;
     private List<Tile> drawPile;
     private List<Tile> discardPile;
     private Map<String, List<Tile>> playerHands;
     private Map<String, List<Tile>> playerRevealedTiles;
-    private Map<String, Integer> playerPositions;
+    @Getter private Map<String, Integer> playerPositions;
     private List<GameAction> actionHistory;
-    private GameStatus status;
-    private String winnerEmail;
+    @Getter @Setter private GameStatus status;
+    @Getter @Setter private String winnerEmail;
 
     public enum GameStatus {
         WAITING,
@@ -103,39 +106,7 @@ public class Game {
         playerHands.getOrDefault(playerEmail, new ArrayList<>()).removeAll(tiles);
     }
 
-    // Getters and Setters
-    public String getRoomId() {
-        return roomId;
-    }
-
-    public void setRoomId(String roomId) {
-        this.roomId = roomId;
-    }
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
-
-    public String getDealerEmail() {
-        return dealerEmail;
-    }
-
-    public void setDealerEmail(String dealerEmail) {
-        this.dealerEmail = dealerEmail;
-    }
-
+    // Custom getters with defensive copying
     public List<Tile> getDrawPile() {
         return new ArrayList<>(drawPile);
     }
@@ -160,28 +131,8 @@ public class Game {
         return result;
     }
 
-    public Map<String, Integer> getPlayerPositions() {
-        return new HashMap<>(playerPositions);
-    }
-
     public void setPlayerPositions(Map<String, Integer> playerPositions) {
         this.playerPositions = new ConcurrentHashMap<>(playerPositions);
-    }
-
-    public GameStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(GameStatus status) {
-        this.status = status;
-    }
-
-    public String getWinnerEmail() {
-        return winnerEmail;
-    }
-
-    public void setWinnerEmail(String winnerEmail) {
-        this.winnerEmail = winnerEmail;
     }
 
     @Override

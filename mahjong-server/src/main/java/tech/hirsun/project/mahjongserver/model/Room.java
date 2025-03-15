@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import lombok.Data;
+
+@Data
 public class Room {
     private String roomId;
     private String password;
@@ -49,38 +52,6 @@ public class Room {
         return playerEmails.size() < 4 && status == RoomStatus.WAITING && !isExpired();
     }
 
-    public String getRoomId() {
-        return roomId;
-    }
-
-    public void setRoomId(String roomId) {
-        this.roomId = roomId;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public LocalDateTime getCreationTime() {
-        return creationTime;
-    }
-
-    public void setCreationTime(LocalDateTime creationTime) {
-        this.creationTime = creationTime;
-    }
-
-    public String getCreatorEmail() {
-        return creatorEmail;
-    }
-
-    public void setCreatorEmail(String creatorEmail) {
-        this.creatorEmail = creatorEmail;
-    }
-
     public List<String> getPlayerEmails() {
         return new ArrayList<>(playerEmails);
     }
@@ -89,22 +60,6 @@ public class Room {
         if (!playerEmails.contains(playerEmail)) {
             playerEmails.add(playerEmail);
         }
-    }
-
-    public Game getCurrentGame() {
-        return currentGame;
-    }
-
-    public void setCurrentGame(Game currentGame) {
-        this.currentGame = currentGame;
-    }
-
-    public RoomStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(RoomStatus status) {
-        this.status = status;
     }
 
     @Override

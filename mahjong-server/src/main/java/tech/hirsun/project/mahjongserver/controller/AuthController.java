@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Data;
 import tech.hirsun.project.mahjongserver.model.User;
 import tech.hirsun.project.mahjongserver.service.AuthService;
 
@@ -103,27 +104,13 @@ public class AuthController {
     }
 
     // Request classes
+    @Data
     public static class LoginRequest {
         private String email;
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
     }
 
+    @Data
     public static class NicknameRequest {
         private String nickname;
-
-        public String getNickname() {
-            return nickname;
-        }
-
-        public void setNickname(String nickname) {
-            this.nickname = nickname;
-        }
     }
 } 
