@@ -1,35 +1,40 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import './App.css';
+import Login from './components/Login';
+import RoomList from './components/RoomList';
+import Room from './components/Room';
+import Game from './components/Game';
+import { useAuthStore } from './stores/authStore';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { isAuthenticated, initialize } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      await initialize();
+      setLoading(false);
+    };
+    
+    initAuth();
+  }, [initialize]);
+
+  if (loading) {
+    return <div className="loading">加载中...</div>;
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={isAuthenticated ? <Navigate to="/rooms" /> : <Login />} />
+        <Route path="/rooms" element={isAuthenticated ? <RoomList /> : <Navigate to="/" />} />
+        <Route path="/rooms/:roomId" element={isAuthenticated ? <Room /> : <Navigate to="/" />} />
+        <Route path="/rooms/:roomId/game" element={isAuthenticated ? <Game /> : <Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

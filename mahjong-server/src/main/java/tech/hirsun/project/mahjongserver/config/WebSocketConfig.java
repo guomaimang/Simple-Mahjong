@@ -27,6 +27,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(webSocketController, websocketEndpoint)
                 .addInterceptors(handshakeInterceptor)
-                .setAllowedOrigins("*"); // In production, this should be restricted
+                .withSockJS();  // 添加SockJS支持，提高兼容性
     }
 } 
