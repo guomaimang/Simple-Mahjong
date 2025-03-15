@@ -39,9 +39,22 @@
   border-radius: 8px;
 }
 
+.room-details {
+  text-align: left;
+  flex: 1;
+}
+
 .room-details p {
-  margin: 0.5rem 0;
+  margin: 0.75rem 0;
   color: #333;
+  line-height: 1.5;
+  font-size: 1.05rem;
+}
+
+.room-details p strong {
+  display: inline-block;
+  width: 80px;
+  font-weight: 600;
 }
 
 .join-section {

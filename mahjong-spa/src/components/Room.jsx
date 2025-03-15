@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useRoomStore } from '../stores/roomStore';
 import { useAuthStore } from '../stores/authStore';
@@ -24,6 +24,7 @@ const Room = () => {
   const [password, setPassword] = useState(location.state?.password || '');
   const [hasJoined, setHasJoined] = useState(false);
   const [systemMessages, setSystemMessages] = useState([]);
+  const refreshTimerRef = useRef(null); // 用于保存定时器引用
 
   useEffect(() => {
     const initRoom = async () => {
@@ -65,13 +66,42 @@ const Room = () => {
       });
     });
 
+    // 设置自动刷新定时器 - 每5秒刷新一次玩家列表
+    refreshTimerRef.current = setInterval(() => {
+      if (hasJoined) {
+        fetchRoom(roomId);
+      }
+    }, 5000);
+
     return () => {
+      // 清理定时器
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+      }
       // 清理监听器
       websocketService.removeListener('SYSTEM_NOTIFICATION');
       websocketService.removeListener('ROOM_STATE_UPDATE');
       leaveCurrentRoom();
     };
-  }, [roomId, fetchRoom, user, navigate, leaveCurrentRoom]);
+  }, [roomId, fetchRoom, user, navigate, leaveCurrentRoom, hasJoined]);
+
+  // 当用户加入房间时，也需要更新定时器状态
+  useEffect(() => {
+    // 如果玩家已加入，确保定时器正在运行
+    if (hasJoined && !refreshTimerRef.current) {
+      refreshTimerRef.current = setInterval(() => {
+        fetchRoom(roomId);
+      }, 5000);
+    }
+    
+    return () => {
+      // 组件卸载时清理定时器
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, [hasJoined, roomId, fetchRoom]);
 
   const handleJoinRoom = async () => {
     if (!password) {
@@ -83,6 +113,8 @@ const Room = () => {
     if (success) {
       setHasJoined(true);
       websocketService.joinRoom(roomId);
+      // 立即获取一次最新的玩家列表
+      fetchRoom(roomId);
     }
   };
 
@@ -168,6 +200,7 @@ const Room = () => {
 
       <div className="room-info">
         <div className="room-details">
+          <p><strong>房间号:</strong> {currentRoom.roomId}</p>
           <p><strong>创建者:</strong> {players.find(p => p.email === currentRoom.creatorEmail)?.nickname || currentRoom.creatorEmail}</p>
           <p><strong>创建时间:</strong> {formatTime(currentRoom.creationTime)}</p>
           <p><strong>剩余时间:</strong> {calculateTimeLeft(currentRoom.creationTime)}</p>
