@@ -418,7 +418,7 @@ const Game = () => {
         <div className="discard-pile">
           <h3>弃牌区</h3>
           <div className="tiles-container">
-            {discardPile.map((tile, idx) => (
+            {discardPile.slice().reverse().map((tile, idx) => (
               <div 
                 key={idx} 
                 className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
