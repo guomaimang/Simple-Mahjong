@@ -74,6 +74,14 @@ const RoomList = () => {
         >
           创建新房间
         </button>
+        
+        <button 
+          className="refresh-button" 
+          onClick={() => fetchRooms()}
+          disabled={loading}
+        >
+          刷新
+        </button>
 
         <form className="join-room-form" onSubmit={handleJoinRoom}>
           <input
