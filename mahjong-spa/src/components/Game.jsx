@@ -1076,91 +1076,9 @@ const Game = () => {
           </div>
         </div>
         
-        {/* 我的手牌区域 - 现在放在上面 */}
-        <div 
-          className="my-hand-tiles"
-          style={{ marginBottom: '30px', paddingBottom: '20px', borderBottom: '2px dashed #ccc' }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            if (dragSource === 'discard' || dragSource === 'revealed') {
-              e.currentTarget.classList.add('hand-drag-over');
-            }
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
-            e.currentTarget.classList.remove('hand-drag-over');
-          }}
-          onDrop={async (e) => {
-            e.preventDefault();
-            e.currentTarget.classList.remove('hand-drag-over');
-            
-            // 如果是从弃牌区拖来的牌，进行拿牌操作
-            if (dragSource === 'discard' && draggedTile) {
-              try {
-                console.log('准备拿取弃牌:', draggedTile);
-                if (!draggedTile.id) {
-                  console.error('拖拽的牌没有ID属性:', draggedTile);
-                  return;
-                }
-                await takeTile(roomId, draggedTile);
-                setDraggedTile(null);
-                setDragSource(null);
-              } catch (error) {
-                console.error('拿牌失败:', error);
-              }
-            }
-            
-            // 手牌之间的排序
-            const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
-            if (isNaN(dragIndex) || dragIndex === dropIndex) return;
-
-            // 创建新数组并改变其中元素的顺序
-            const newHand = [...playerHand];
-            const [draggedTile] = newHand.splice(dragIndex, 1);
-            newHand.splice(dropIndex, 0, draggedTile);
-            
-            // 使用store中现有的方法更新playerHand
-            useGameStore.setState({ playerHand: newHand });
-            
-            // 重置状态
-            setDraggedTileIndex(null);
-            setDragOverIndex(null);
-          }}
-        >
-          <div className="hand-title">
-            <span className="hand-label">我的手牌</span>
-          </div>
-          <div className="drag-area-hint">
-            将弃牌拖到此区域拿牌
-          </div>
-          <div className="tiles-container">
-            {playerHand.map((tile, index) => (
-              <div 
-                key={tile.id} 
-                className={`tile 
-                  ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
-                  ${draggedTileIndex === index ? 'dragging' : ''} 
-                  ${dragOverIndex === index ? 'drag-over' : ''}
-                  ${isRevealedTile(tile) ? 'my-revealed' : ''}
-                  ${isLastDrawnTile(tile) ? 'last-drawn' : ''}`}
-                onClick={() => handleTileSelect(tile)}
-                draggable={true}
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, index)}
-              >
-                {getTileDisplayName(tile)}
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* 我的明牌区域 - 现在放在下面 */}
+        {/* 我的明牌区域 */}
         <div 
           className="my-revealed-tiles"
-          style={{ marginTop: '20px', paddingTop: '10px' }}
           onDragOver={(e) => {
             e.preventDefault();
             if (dragSource === 'hand') {
@@ -1221,6 +1139,86 @@ const Game = () => {
                     }
                   }, 300);
                 }}
+              >
+                {getTileDisplayName(tile)}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* 我的手牌区域 */}
+        <div 
+          className="my-hand-tiles"
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (dragSource === 'discard' || dragSource === 'revealed') {
+              e.currentTarget.classList.add('hand-drag-over');
+            }
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('hand-drag-over');
+          }}
+          onDrop={async (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('hand-drag-over');
+            
+            // 如果是从弃牌区拖来的牌，进行拿牌操作
+            if (dragSource === 'discard' && draggedTile) {
+              try {
+                console.log('准备拿取弃牌:', draggedTile);
+                if (!draggedTile.id) {
+                  console.error('拖拽的牌没有ID属性:', draggedTile);
+                  return;
+                }
+                await takeTile(roomId, draggedTile);
+                setDraggedTile(null);
+                setDragSource(null);
+              } catch (error) {
+                console.error('拿牌失败:', error);
+              }
+            }
+            
+            // 如果是从明牌区拖来的牌，进行暗牌操作
+            if (dragSource === 'revealed' && draggedTile) {
+              try {
+                console.log('准备暗牌:', draggedTile);
+                if (!draggedTile.id) {
+                  console.error('拖拽的牌没有ID属性:', draggedTile);
+                  return;
+                }
+                await hideTiles(roomId, [draggedTile]);
+                setDraggedTile(null);
+                setDragSource(null);
+              } catch (error) {
+                console.error('暗牌失败:', error);
+              }
+            }
+          }}
+        >
+          <div className="hand-title">
+            <span className="hand-label">我的手牌</span>
+          </div>
+          <div className="drag-area-hint">
+            将弃牌拖到此区域拿牌
+          </div>
+          <div className="tiles-container">
+            {playerHand.map((tile, index) => (
+              <div 
+                key={tile.id} 
+                className={`tile 
+                  ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
+                  ${draggedTileIndex === index ? 'dragging' : ''} 
+                  ${dragOverIndex === index ? 'drag-over' : ''}
+                  ${isRevealedTile(tile) ? 'my-revealed' : ''}
+                  ${isLastDrawnTile(tile) ? 'last-drawn' : ''}`}
+                onClick={() => handleTileSelect(tile)}
+                draggable={true}
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
               >
                 {getTileDisplayName(tile)}
               </div>
