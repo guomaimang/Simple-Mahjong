@@ -100,6 +100,17 @@ public class Game {
         discardPile.add(tile);
     }
 
+    // Remove a tile from the discard pile by its ID
+    public boolean removeTileFromDiscardPile(int tileId) {
+        for (int i = 0; i < discardPile.size(); i++) {
+            if (discardPile.get(i).getId() == tileId) {
+                discardPile.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Reveal player's tiles
     public void revealPlayerTiles(String playerEmail, List<Tile> tiles) {
         playerRevealedTiles.computeIfAbsent(playerEmail, k -> new ArrayList<>()).addAll(tiles);

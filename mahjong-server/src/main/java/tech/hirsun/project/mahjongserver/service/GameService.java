@@ -175,7 +175,7 @@ public class GameService {
             return false;
         }
         
-        // Find tile in discard pile
+        // Find tile in discard pile - 需要在移除前找到牌对象，用于记录和添加到玩家手牌
         List<Tile> discardPile = game.getDiscardPile();
         Tile tileToTake = null;
         for (Tile tile : discardPile) {
@@ -187,7 +187,10 @@ public class GameService {
         
         if (tileToTake != null) {
             // Remove tile from discard pile
-            discardPile.remove(tileToTake);
+            boolean removed = game.removeTileFromDiscardPile(tileId);
+            if (!removed) {
+                return false;
+            }
             
             // Add tile to player's hand
             game.addTileToPlayerHand(userEmail, tileToTake);
