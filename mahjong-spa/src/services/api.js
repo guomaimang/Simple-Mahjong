@@ -28,16 +28,6 @@ const createAuthHeader = () => {
 
 // 认证相关API
 export const authApi = {
-  login: async (email) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-      credentials: 'include',
-    });
-    return handleResponse(response);
-  },
-
   getGithubLoginUrl: async () => {
     const response = await fetch(`${API_URL}/auth/github-login-url`, {
       method: 'GET',

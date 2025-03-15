@@ -53,30 +53,6 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // 用户登录（邮箱方式）
-  login: async (email) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await authApi.login(email);
-      if (response && response.token) {
-        localStorage.setItem('auth_token', response.token);
-        set({ 
-          user: response.user,
-          isAuthenticated: true,
-          loading: false,
-        });
-        return true;
-      }
-      return false;
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error.message,
-      });
-      return false;
-    }
-  },
-
   // GitHub登录
   loginWithGithub: async () => {
     set({ loading: true, error: null });

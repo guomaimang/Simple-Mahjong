@@ -1,6 +1,5 @@
 package tech.hirsun.project.mahjongserver.controller;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,27 +35,6 @@ public class AuthController {
     @Value("${server.url:http://localhost:8080}")
     private String serverUrl;
 
-    /**
-     * Login endpoint (email方式登录，保留向后兼容性)
-     * @param request Login request containing email
-     * @return JWT token
-     */
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
-        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
-        }
-        
-        String token = authService.login(request.getEmail());
-        User user = authService.getUserFromToken(token);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("user", user);
-        
-        return ResponseEntity.ok(response);
-    }
-    
     /**
      * GitHub 登录URL获取端点
      * @return GitHub 授权URL
@@ -134,11 +112,6 @@ public class AuthController {
     }
 
     // Request classes
-    @Data
-    public static class LoginRequest {
-        private String email;
-    }
-
     @Data
     public static class NicknameRequest {
         private String nickname;

@@ -12,7 +12,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <h1>麻将对战系统</h1>
-        <p className="subtitle">使用GitHub账号登录</p>
+        <p className="subtitle">使用 SSO 登录</p>
 
         <button 
           onClick={handleGithubLogin}
