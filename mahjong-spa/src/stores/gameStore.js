@@ -12,6 +12,7 @@ export const useGameStore = create((set, get) => ({
   pendingWinner: null,
   loading: false,
   error: null,
+  tryCount: 0,
 
   // 初始化游戏状态监听
   initializeListeners: (roomId) => {
@@ -116,9 +117,30 @@ export const useGameStore = create((set, get) => ({
 
   // 获取游戏状态
   fetchGameState: async (roomId) => {
+    // 添加一个防抖变量避免频繁请求
+    if (get().loading) {
+      console.log('Already loading game state, skipping request');
+      return;
+    }
+    
     set({ loading: true, error: null });
+    // 添加一个尝试计数器
+    const tryCount = get().tryCount || 0;
+    
+    // 如果尝试次数过多，显示错误并停止请求
+    if (tryCount > 5) {
+      console.error('Max retry count reached, stopping game state requests');
+      set({ 
+        loading: false, 
+        error: '无法获取游戏状态，请刷新页面重试', 
+        tryCount: 0 
+      });
+      return;
+    }
+    
     try {
       await websocketService.getGameState(roomId);
+      set({ tryCount: tryCount + 1 });
       
       // 添加重试机制，如果3秒后仍然没有接收到游戏状态，再次尝试
       const currentState = get().gameState;
@@ -126,7 +148,7 @@ export const useGameStore = create((set, get) => ({
       return new Promise((resolve) => {
         if (currentState && currentState.roomId === roomId) {
           // 如果已经有状态了，直接返回
-          set({ loading: false });
+          set({ loading: false, tryCount: 0 });
           resolve(currentState);
         } else {
           // 否则设置超时再次尝试
@@ -134,18 +156,21 @@ export const useGameStore = create((set, get) => ({
             const newState = get().gameState;
             if (!newState || newState.roomId !== roomId) {
               console.log('No game state received after timeout, retrying...');
-              await websocketService.getGameState(roomId);
+              // 不直接调用fetchGameState以避免无限循环
+              set({ loading: false });
+            } else {
+              // 已经收到状态，重置尝试计数
+              set({ tryCount: 0 });
             }
-            set({ loading: false });
             resolve(get().gameState);
           }, 3000);
           
           // 添加一次性监听器，如果收到状态更新则清除超时
           const listener = (data) => {
-            if (data && data.roomId === roomId) {
+            if (data && (data.roomId === roomId || (data.gameState && data.gameState.roomId === roomId))) {
               clearTimeout(timeout);
               websocketService.removeListener('GAME_STATE', listener);
-              set({ loading: false });
+              set({ loading: false, tryCount: 0 });
               resolve(data);
             }
           };
@@ -279,6 +304,7 @@ export const useGameStore = create((set, get) => ({
       pendingWinner: null,
       loading: false,
       error: null,
+      tryCount: 0,
     });
   },
 })); 

@@ -447,40 +447,58 @@ public class GameService {
         
         Game game = room.getCurrentGame();
         if (game == null) {
-            System.out.println("GameService.getGameState: Game is null");
-            return Map.of();
+            // 如果游戏为null但房间状态不是PLAYING，返回空状态而不是空Map
+            System.out.println("GameService.getGameState: Game is null, returning waiting state");
+            Map<String, Object> waitingState = new HashMap<>();
+            waitingState.put("roomId", roomId);
+            waitingState.put("status", "WAITING");
+            waitingState.put("playerPositions", Map.of());
+            waitingState.put("hand", new ArrayList<>());
+            waitingState.put("revealedTiles", Map.of());
+            waitingState.put("discardPile", new ArrayList<>());
+            waitingState.put("recentActions", new ArrayList<>());
+            return waitingState;
         }
         
         Map<String, Object> state = new HashMap<>();
         
-        // Basic game info
-        state.put("roomId", roomId);
-        state.put("status", game.getStatus().toString());
-        state.put("remainingTiles", game.getRemainingTilesCount());
-        state.put("dealerEmail", game.getDealerEmail());
-        
-        // Player positions
-        state.put("playerPositions", game.getPlayerPositions());
-        
-        // Current player's hand
-        state.put("hand", game.getPlayerHand(userEmail));
-        
-        // Revealed tiles for all players
-        state.put("revealedTiles", game.getPlayerRevealedTiles());
-        
-        // Discard pile
-        state.put("discardPile", game.getDiscardPile());
-        
-        // Recent actions
-        state.put("recentActions", game.getRecentActions(2));
-        
-        // Win status
-        if (game.getStatus() == Game.GameStatus.FINISHED) {
-            state.put("winner", game.getWinnerEmail());
-            state.put("isDraw", game.getWinnerEmail() == null);
+        try {
+            // Basic game info
+            state.put("roomId", roomId);
+            state.put("status", game.getStatus().toString());
+            state.put("remainingTiles", game.getRemainingTilesCount());
+            state.put("dealerEmail", game.getDealerEmail());
+            
+            // Player positions
+            state.put("playerPositions", game.getPlayerPositions());
+            
+            // Current player's hand
+            state.put("hand", game.getPlayerHand(userEmail));
+            
+            // Revealed tiles for all players
+            state.put("revealedTiles", game.getPlayerRevealedTiles());
+            
+            // Discard pile
+            state.put("discardPile", game.getDiscardPile());
+            
+            // Recent actions
+            state.put("recentActions", game.getRecentActions(2));
+            
+            // Win status
+            if (game.getStatus() == Game.GameStatus.FINISHED) {
+                state.put("winner", game.getWinnerEmail());
+                state.put("isDraw", game.getWinnerEmail() == null);
+            }
+            
+            System.out.println("GameService.getGameState: Returning state for user: " + userEmail + 
+                    ", status: " + game.getStatus() + 
+                    ", handSize: " + game.getPlayerHand(userEmail).size() + 
+                    ", remainingTiles: " + game.getRemainingTilesCount());
+        } catch (Exception e) {
+            System.err.println("GameService.getGameState: Error building game state: " + e.getMessage());
+            e.printStackTrace();
         }
         
-        System.out.println("GameService.getGameState: Returning state for user: " + userEmail);
         return state;
     }
 } 

@@ -3,6 +3,8 @@ package tech.hirsun.project.mahjongserver.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,9 @@ public class WebSocketController extends TextWebSocketHandler {
     private WebSocketService webSocketService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // 存储正在处理GET_GAME_STATE请求的用户
+    private final Set<String> processingGameStateRequests = ConcurrentHashMap.newKeySet();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -449,19 +454,38 @@ public class WebSocketController extends TextWebSocketHandler {
     private void handleGetGameState(String userEmail, JsonNode data) {
         String roomId = data.get("roomId").asText();
         
-        // Get game state
-        Map<String, Object> gameState = gameService.getGameState(roomId, userEmail);
-        if (gameState.isEmpty()) {
-            webSocketService.sendErrorMessage(userEmail, "STATE_FAILED", "Failed to get game state");
+        LOGGER.info("Handling GET_GAME_STATE request for room: " + roomId + " from user: " + userEmail);
+        
+        // 检查这个用户是否已经在处理游戏状态请求
+        String requestKey = userEmail + ":" + roomId;
+        if (processingGameStateRequests.contains(requestKey)) {
+            LOGGER.info("Already processing GET_GAME_STATE for user: " + userEmail + " in room: " + roomId);
             return;
         }
         
-        // 确保包含房间ID
-        if (!gameState.containsKey("roomId")) {
-            gameState.put("roomId", roomId);
-        }
+        // 标记用户正在处理游戏状态请求
+        processingGameStateRequests.add(requestKey);
         
-        // Send game state to the player
-        webSocketService.sendMessage(userEmail, "GAME_STATE", gameState);
+        try {
+            // Get game state
+            Map<String, Object> gameState = gameService.getGameState(roomId, userEmail);
+            if (gameState.isEmpty()) {
+                LOGGER.warning("Failed to get game state for user: " + userEmail);
+                webSocketService.sendErrorMessage(userEmail, "STATE_FAILED", "Failed to get game state");
+                return;
+            }
+            
+            // 确保包含房间ID
+            if (!gameState.containsKey("roomId")) {
+                gameState.put("roomId", roomId);
+            }
+            
+            // Send game state to the player
+            LOGGER.info("Sending game state to user: " + userEmail + ", state size: " + gameState.size() + " entries");
+            webSocketService.sendMessage(userEmail, "GAME_STATE", gameState);
+        } finally {
+            // 移除处理标记
+            processingGameStateRequests.remove(requestKey);
+        }
     }
 } 

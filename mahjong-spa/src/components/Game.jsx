@@ -44,40 +44,70 @@ const Game = () => {
   useEffect(() => {
     const initGame = async () => {
       try {
+        console.log('Initializing game for room:', roomId);
+        
+        // 确保WebSocket连接已经建立
+        if (!websocketService.isConnected()) {
+          console.log('WebSocket not connected, connecting...');
+          await websocketService.connect();
+          console.log('WebSocket connected successfully');
+        }
+        
         // 获取房间信息
+        console.log('Fetching room information');
         await fetchRoom(roomId);
         
-        // 连接WebSocket
-        await websocketService.connect();
-        
         // 初始化游戏状态监听器
+        console.log('Initializing game state listeners');
         initializeListeners(roomId);
         
+        // 等待短暂时间确保监听器已经注册
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // 获取游戏状态
+        console.log('Fetching initial game state');
         await fetchGameState(roomId);
         
-        // 添加重试逻辑，如果5秒后仍然没有游戏状态，再次尝试
-        const retryTimeout = setTimeout(async () => {
-          if (!gameState) {
-            console.log('No game state received, retrying...');
-            await fetchGameState(roomId);
-          }
-        }, 5000);
-        
-        return () => clearTimeout(retryTimeout);
+        console.log('Game initialization completed');
       } catch (error) {
         console.error('Failed to initialize game:', error);
       }
     };
 
+    // 清理之前的监听器和状态
+    removeListeners();
+    resetGameState();
+    
+    // 初始化游戏
     initGame();
 
     return () => {
-      // 清理监听器
+      // 清理监听器和状态
+      console.log('Cleaning up game component');
       removeListeners();
       resetGameState();
     };
-  }, [roomId, fetchRoom, initializeListeners, removeListeners, fetchGameState, resetGameState, gameState]);
+  }, [roomId, fetchRoom, initializeListeners, removeListeners, fetchGameState, resetGameState]);
+  
+  // 添加一个游戏状态检查的效果
+  useEffect(() => {
+    // 如果加载超过10秒还没有游戏状态，尝试重新连接
+    if (loading) {
+      const timeout = setTimeout(() => {
+        if (loading && !gameState) {
+          console.log('Game loading timeout, trying to reconnect...');
+          websocketService.disconnect();
+          setTimeout(() => {
+            websocketService.connect().then(() => {
+              fetchGameState(roomId);
+            });
+          }, 1000);
+        }
+      }, 10000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [loading, gameState, roomId, fetchGameState]);
 
   // 监听胜利声明
   useEffect(() => {

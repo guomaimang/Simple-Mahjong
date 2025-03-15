@@ -12,16 +12,25 @@ class WebSocketService {
     this.isConnecting = false;
   }
 
+  // 检查WebSocket是否已连接
+  isConnected() {
+    return this.socket && this.socket.readyState === WebSocket.OPEN;
+  }
+
   // 连接WebSocket
   connect() {
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
-      return this.connectionPromise;
+    // 如果已经连接或正在连接，返回现有Promise
+    if (this.isConnected()) {
+      console.log('WebSocket already connected');
+      return Promise.resolve(this.socket);
     }
 
     if (this.isConnecting && this.connectionPromise) {
+      console.log('WebSocket connection in progress');
       return this.connectionPromise;
     }
 
+    console.log('Initiating new WebSocket connection');
     this.isConnecting = true;
     this.connectionPromise = new Promise((resolve, reject) => {
       try {
@@ -32,20 +41,30 @@ class WebSocketService {
           return;
         }
 
+        // 清理旧连接
+        if (this.socket) {
+          try {
+            this.socket.close();
+          } catch (err) {
+            console.warn('Error closing existing socket:', err);
+          }
+        }
+
         // 添加CONNECTED消息类型的监听器
         this.addListener('CONNECTED', (data) => {
           console.log('Received CONNECTED message:', data);
           
           // 如果当前在游戏中，且URL包含房间ID，自动重新获取游戏状态
           const path = window.location.pathname;
-          const match = path.match(/\/games\/(\d+)/);
+          const match = path.match(/\/rooms\/(\d+)\/game/);
           if (match && match[1]) {
             const roomId = match[1];
             console.log('Automatically requesting game state for room:', roomId);
-            this.getGameState(roomId);
+            setTimeout(() => this.getGameState(roomId), 500);
           }
         });
 
+        console.log('Creating new WebSocket connection');
         this.socket = new WebSocket(`${WS_URL}?token=${token}`);
 
         this.socket.onopen = () => {
