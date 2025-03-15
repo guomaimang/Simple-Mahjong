@@ -91,6 +91,61 @@
   box-shadow: 0 4px 6px rgba(75, 108, 183, 0.2);
 }
 
+.github-login-button {
+  width: 100%;
+  padding: 0.9rem;
+  background-color: #24292e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(36, 41, 46, 0.2);
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.github-login-button:hover {
+  background-color: #1b1f23;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(36, 41, 46, 0.3);
+}
+
+.github-login-button:active {
+  transform: translateY(0);
+}
+
+.github-login-button:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: #a0aec0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.divider span {
+  padding: 0 1rem;
+  font-size: 0.9rem;
+}
+
 .login-button:hover {
   background-color: #3d5a9e;
   transform: translateY(-2px);

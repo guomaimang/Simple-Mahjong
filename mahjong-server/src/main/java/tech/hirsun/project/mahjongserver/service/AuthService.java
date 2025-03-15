@@ -34,6 +34,15 @@ public class AuthService {
     }
 
     /**
+     * Get user by email
+     * @param email User's email
+     * @return User or null if not found
+     */
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    /**
      * Validate a token
      * @param token JWT token
      * @return true if valid, false if invalid

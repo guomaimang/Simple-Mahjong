@@ -54,8 +54,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.3</version>
-            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -112,16 +111,15 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-
         <!-- 添加 Jackson JSR310 支持，用于序列化 Java 8 日期/时间类型 -->
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
 
     </dependencies>

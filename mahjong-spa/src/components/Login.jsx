@@ -1,53 +1,31 @@
-import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import '../styles/Login.css';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const { login, loading, error } = useAuthStore();
+  const { loginWithGithub, loading, error } = useAuthStore();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) {
-      alert('请输入有效的邮箱地址');
-      return;
-    }
-    await login(email);
+  const handleGithubLogin = async () => {
+    await loginWithGithub();
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
         <h1>麻将对战系统</h1>
-        <p className="subtitle">请使用邮箱登录</p>
+        <p className="subtitle">使用GitHub账号登录</p>
 
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
-            <label htmlFor="email">邮箱地址</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="请输入邮箱地址"
-              required
-              disabled={loading}
-            />
-          </div>
+        <button 
+          onClick={handleGithubLogin}
+          className="github-login-button"
+          disabled={loading}
+        >
+          {loading ? '登录中...' : '使用 GitHub 账号登录'}
+        </button>
 
-          {error && <div className="error-message">{error}</div>}
-
-          <button 
-            type="submit" 
-            className="login-button"
-            disabled={loading}
-          >
-            {loading ? '登录中...' : '登录'}
-          </button>
-        </form>
+        {error && <div className="error-message">{error}</div>}
 
         <div className="login-info">
-          <p>无需注册，直接使用邮箱登录</p>
+          <p>点击上方按钮使用GitHub账号登录</p>
           <p>系统会自动创建账户</p>
         </div>
       </div>

@@ -4,8 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,9 +26,18 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+    
+    @Autowired
+    private ClientRegistrationRepository clientRegistrationRepository;
+    
+    @Value("${frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+    
+    @Value("${server.url:http://localhost:8080}")
+    private String serverUrl;
 
     /**
-     * Login endpoint
+     * Login endpoint (email方式登录，保留向后兼容性)
      * @param request Login request containing email
      * @return JWT token
      */
@@ -43,6 +55,26 @@ public class AuthController {
         response.put("user", user);
         
         return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * GitHub 登录URL获取端点
+     * @return GitHub 授权URL
+     */
+    @GetMapping("/github-login-url")
+    public ResponseEntity<Map<String, String>> getGithubLoginUrl() {
+        ClientRegistration githubRegistration = clientRegistrationRepository.findByRegistrationId("github");
+        
+        if (githubRegistration == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "GitHub OAuth configuration not found"));
+        }
+        
+        // 获取完整的后端服务器URL
+        String authorizationRequestBaseUri = "/oauth2/authorization";
+        String githubLoginUrl = serverUrl + authorizationRequestBaseUri + "/github";
+        
+        return ResponseEntity.ok(Map.of("url", githubLoginUrl));
     }
 
     /**

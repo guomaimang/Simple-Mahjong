@@ -38,6 +38,15 @@ export const authApi = {
     return handleResponse(response);
   },
 
+  getGithubLoginUrl: async () => {
+    const response = await fetch(`${API_URL}/auth/github-login-url`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    return handleResponse(response);
+  },
+
   updateNickname: async (nickname) => {
     const response = await fetch(`${API_URL}/auth/nickname`, {
       method: 'POST',

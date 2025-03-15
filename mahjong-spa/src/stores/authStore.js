@@ -13,6 +13,17 @@ export const useAuthStore = create((set, get) => ({
   initialize: async () => {
     set({ loading: true, error: null });
     try {
+      // 检查URL中是否有token参数（GitHub OAuth回调）
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      
+      if (tokenFromUrl) {
+        // 如果URL中有token，保存并使用它
+        localStorage.setItem('auth_token', tokenFromUrl);
+        // 清除URL中的token参数
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
       const response = await authApi.validateToken();
       if (response && response.user) {
         set({ 
@@ -42,7 +53,7 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // 用户登录
+  // 用户登录（邮箱方式）
   login: async (email) => {
     set({ loading: true, error: null });
     try {
@@ -56,6 +67,27 @@ export const useAuthStore = create((set, get) => ({
         });
         return true;
       }
+      return false;
+    } catch (error) {
+      set({ 
+        loading: false, 
+        error: error.message,
+      });
+      return false;
+    }
+  },
+
+  // GitHub登录
+  loginWithGithub: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await authApi.getGithubLoginUrl();
+      if (response && response.url) {
+        // 重定向到GitHub授权页面
+        window.location.href = response.url;
+        return true;
+      }
+      set({ loading: false, error: "无法获取GitHub登录URL" });
       return false;
     } catch (error) {
       set({ 
