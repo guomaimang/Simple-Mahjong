@@ -147,10 +147,21 @@ const Game = () => {
   const handleTileSelect = (tile) => {
     if (!actionType) return;
 
-    if (selectedTiles.some(t => t.id === tile.id)) {
-      setSelectedTiles(selectedTiles.filter(t => t.id !== tile.id));
+    // 如果是明牌操作，允许选择多张牌
+    if (actionType === 'reveal') {
+      if (selectedTiles.some(t => t.id === tile.id)) {
+        setSelectedTiles(selectedTiles.filter(t => t.id !== tile.id));
+      } else {
+        setSelectedTiles([...selectedTiles, tile]);
+      }
     } else {
-      setSelectedTiles([...selectedTiles, tile]);
+      // 对于出牌和拿牌操作，只允许选择一张牌
+      if (selectedTiles.some(t => t.id === tile.id)) {
+        setSelectedTiles(selectedTiles.filter(t => t.id !== tile.id));
+      } else {
+        // 直接设置为只有当前选择的牌，替换之前的选择
+        setSelectedTiles([tile]);
+      }
     }
   };
 
@@ -173,6 +184,7 @@ const Game = () => {
           await takeTile(roomId, selectedTiles[0]);
           break;
         case 'reveal':
+          // 明牌操作可以选择多张牌
           await revealTiles(roomId, selectedTiles);
           break;
         default:
@@ -188,9 +200,10 @@ const Game = () => {
   };
 
   // 处理抽牌
-  const handleDrawTiles = async (count) => {
+  const handleDrawTiles = async () => {
     try {
-      await drawTile(roomId, count);
+      // 只能抽一张牌
+      await drawTile(roomId);
     } catch (error) {
       console.error('Failed to draw tiles:', error);
     }
@@ -409,8 +422,7 @@ const Game = () => {
           <div className="pile-info">
             <span>牌库剩余: {drawPileCount}</span>
             <div className="draw-buttons">
-              <button onClick={() => handleDrawTiles(1)}>抽1张</button>
-              <button onClick={() => handleDrawTiles(3)}>抽3张</button>
+              <button onClick={handleDrawTiles}>抽1张</button>
             </div>
           </div>
         </div>

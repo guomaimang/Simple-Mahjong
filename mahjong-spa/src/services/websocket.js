@@ -238,8 +238,9 @@ class WebSocketService {
   }
 
   // 游戏相关WebSocket方法
-  drawTile(roomId, count = 1) {
-    return this.send('DRAW_TILE', { roomId, count });
+  drawTile(roomId) {
+    // 只能抽一张牌
+    return this.send('DRAW_TILE', { roomId });
   }
 
   discardTile(roomId, tile) {
@@ -252,7 +253,7 @@ class WebSocketService {
   }
 
   revealTiles(roomId, tiles) {
-    // 从每个tile对象中提取id
+    // 从每个tile对象中提取id，支持多张牌明牌
     const tileIds = tiles.map(tile => tile.id);
     return this.send('REVEAL_TILES', { roomId, tileIds });
   }

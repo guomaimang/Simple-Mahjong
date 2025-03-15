@@ -298,10 +298,11 @@ export const useGameStore = create((set, get) => ({
   },
 
   // 抽取牌
-  drawTile: async (roomId, count = 1) => {
+  drawTile: async (roomId) => {
     set({ loading: true, error: null });
     try {
-      await websocketService.drawTile(roomId, count);
+      // 只能抽一张牌
+      await websocketService.drawTile(roomId);
       set({ loading: false });
     } catch (error) {
       set({ 
