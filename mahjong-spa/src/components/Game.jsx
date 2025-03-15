@@ -422,7 +422,7 @@ const Game = () => {
               <div 
                 key={idx} 
                 className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
-                onClick={() => actionType === 'take' ? handleTileSelect(tile) : null}
+                onClick={() => handleTileSelect(tile)}
               >
                 {getTileDisplayName(tile)}
               </div>
@@ -710,7 +710,7 @@ const Game = () => {
                   ${draggedTileIndex === index ? 'dragging' : ''} 
                   ${dragOverIndex === index ? 'drag-over' : ''}
                   ${isRevealedTile(tile) ? 'my-revealed' : ''}`}
-                onClick={() => actionType === 'discard' || actionType === 'reveal' ? handleTileSelect(tile) : null}
+                onClick={() => handleTileSelect(tile)}
                 draggable={true}
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragEnd={handleDragEnd}
