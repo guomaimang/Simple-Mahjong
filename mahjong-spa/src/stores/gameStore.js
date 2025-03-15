@@ -54,10 +54,16 @@ export const useGameStore = create((set, get) => ({
           gameState.roomId = roomId;
         }
         
+        // 对明牌进行排序
+        const sortedRevealedTiles = {};
+        Object.entries(revealedTiles).forEach(([email, tiles]) => {
+          sortedRevealedTiles[email] = get().sortTiles(tiles);
+        });
+        
         set({
           gameState,
           playerHand,
-          revealedTiles,
+          revealedTiles: sortedRevealedTiles,
           playerHandCounts,
           discardPile,
           drawPileCount,
@@ -375,24 +381,49 @@ export const useGameStore = create((set, get) => ({
     }
   },
 
-  // 对手牌进行排序
-  sortPlayerHand: () => {
-    const { playerHand } = get();
+  // 通用牌排序方法
+  sortTiles: (tiles) => {
+    if (!tiles || !Array.isArray(tiles) || tiles.length === 0) {
+      return [];
+    }
     
-    // 排序规则：万子、筒子、条子、风牌、箭牌，然后是数字值
-    const sortedHand = [...playerHand].sort((a, b) => {
-      // 首先按类型排序
+    // 创建一个映射，用于统计每种牌的数量
+    const tileCountMap = {};
+    tiles.forEach(tile => {
+      const key = `${tile.type}-${tile.value}`;
+      tileCountMap[key] = (tileCountMap[key] || 0) + 1;
+    });
+    
+    // 排序规则：
+    // 1. 相同的牌放到一起（数量多的优先）
+    // 2. 对于类型相同的牌放到一起
+    // 3. 从小到大排序
+    return [...tiles].sort((a, b) => {
+      const keyA = `${a.type}-${a.value}`;
+      const keyB = `${b.type}-${b.value}`;
+      
+      // 首先比较牌的数量（相同的牌放到一起，数量多的优先）
+      const countComparison = tileCountMap[keyB] - tileCountMap[keyA];
+      if (countComparison !== 0) {
+        return countComparison;
+      }
+      
+      // 然后按类型排序（类型相同的放在一起）
       const typeOrder = { WAN: 0, TONG: 1, TIAO: 2, FENG: 3, JIAN: 4 };
       const typeComparison = typeOrder[a.type] - typeOrder[b.type];
-      
       if (typeComparison !== 0) {
         return typeComparison;
       }
       
-      // 然后按值排序
+      // 最后按值排序（从小到大）
       return a.value - b.value;
     });
-    
+  },
+
+  // 对手牌进行排序
+  sortPlayerHand: () => {
+    const { playerHand } = get();
+    const sortedHand = get().sortTiles(playerHand);
     set({ playerHand: sortedHand });
   },
 
