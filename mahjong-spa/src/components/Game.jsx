@@ -495,24 +495,78 @@ const Game = () => {
       );
     } else if (playerCount === 3) {
       // 3人游戏：按照相对位置渲染
-      // 创建一个包含3个位置的数组，初始都为null
+      console.log('三人游戏，总玩家数：', playerCount, '其他玩家:', otherPlayers);
+      
+      // 在三人游戏中，我们只需要使用左右两个容器（位置1和位置3）
+      // 位置1放上家，位置3放下家
       const positionedPlayers = [null, null, null];
       
-      // 根据相对位置放置玩家
-      otherPlayers.forEach(([email, pos]) => {
-        const relPos = getRelativePosition(pos);
-        if (relPos === 1) {
-          positionedPlayers[0] = renderPlayerArea(email, 1, "上家");
-        } else if (relPos === 3) {
-          positionedPlayers[2] = renderPlayerArea(email, 3, "下家");
-        }
-      });
+      // 在三人游戏中，假设位置分别为0、1、2
+      // 如果当前玩家是0，那么1是下家(右)，2是上家(左)
+      // 如果当前玩家是1，那么2是下家(右)，0是上家(左)
+      // 如果当前玩家是2，那么0是下家(右)，1是上家(左)
       
-      // 为空位添加占位符
-      if (!positionedPlayers[0]) positionedPlayers[0] = renderEmptyPlayerArea(1, "上家");
-      // 中间位置永远是占位符
-      positionedPlayers[1] = renderEmptyPlayerArea(2, "对家");
-      if (!positionedPlayers[2]) positionedPlayers[2] = renderEmptyPlayerArea(3, "下家");
+      // 确保我们有两个其他玩家
+      if (otherPlayers.length === 2) {
+        const [email1, pos1] = otherPlayers[0];
+        const [email2, pos2] = otherPlayers[1];
+        
+        // 计算相对位置差（顺时针方向）
+        const diff1 = (pos1 - currentPlayerPosition + 3) % 3;
+        const diff2 = (pos2 - currentPlayerPosition + 3) % 3;
+        
+        console.log(`当前玩家位置: ${currentPlayerPosition}`);
+        console.log(`玩家1 ${email1} 位置: ${pos1}, 差值: ${diff1}`);
+        console.log(`玩家2 ${email2} 位置: ${pos2}, 差值: ${diff2}`);
+        
+        // 在三人游戏中：
+        // diff = 1 表示下家（右侧）
+        // diff = 2 表示上家（左侧）
+        
+        if (diff1 === 1 && diff2 === 2) {
+          // 玩家1是下家，玩家2是上家
+          positionedPlayers[2] = renderPlayerArea(email1, 3, "下家");
+          positionedPlayers[0] = renderPlayerArea(email2, 1, "上家");
+        } else if (diff1 === 2 && diff2 === 1) {
+          // 玩家1是上家，玩家2是下家
+          positionedPlayers[0] = renderPlayerArea(email1, 1, "上家");
+          positionedPlayers[2] = renderPlayerArea(email2, 3, "下家");
+        } else {
+          // 异常情况，强制分配
+          console.log('位置关系异常，强制分配');
+          positionedPlayers[0] = renderPlayerArea(email1, 1, "上家");
+          positionedPlayers[2] = renderPlayerArea(email2, 3, "下家");
+        }
+      } else if (otherPlayers.length === 1) {
+        // 只有一个其他玩家的情况
+        const [email, pos] = otherPlayers[0];
+        const diff = (pos - currentPlayerPosition + 3) % 3;
+        
+        console.log(`当前玩家位置: ${currentPlayerPosition}`);
+        console.log(`唯一其他玩家 ${email} 位置: ${pos}, 差值: ${diff}`);
+        
+        if (diff === 1) {
+          // 这个玩家是下家
+          positionedPlayers[2] = renderPlayerArea(email, 3, "下家");
+          positionedPlayers[0] = renderEmptyPlayerArea(1, "上家");
+        } else if (diff === 2) {
+          // 这个玩家是上家
+          positionedPlayers[0] = renderPlayerArea(email, 1, "上家");
+          positionedPlayers[2] = renderEmptyPlayerArea(3, "下家");
+        } else {
+          // 异常情况，强制为下家
+          positionedPlayers[2] = renderPlayerArea(email, 3, "下家");
+          positionedPlayers[0] = renderEmptyPlayerArea(1, "上家");
+        }
+      } else {
+        // 异常情况：没有其他玩家或超过两个其他玩家
+        console.log('异常的其他玩家数量', otherPlayers.length);
+        positionedPlayers[0] = renderEmptyPlayerArea(1, "上家");
+        positionedPlayers[2] = renderEmptyPlayerArea(3, "下家");
+      }
+      
+      // 中间位置保持为空
+      positionedPlayers[1] = <div className="empty-space"></div>;
       
       return (
         <div className={otherPlayersClass}>
@@ -810,20 +864,29 @@ const Game = () => {
           </p>
           
           <div className="game-end-actions">
-            {isCreator && (
+            {isCreator ? (
+              <>
+                <button 
+                  className="start-new-game-button"
+                  onClick={handleStartNewGame}
+                >
+                  再来一局
+                </button>
+                <button 
+                  className="back-button" 
+                  onClick={handleBackToRoom}
+                >
+                  返回房间
+                </button>
+              </>
+            ) : (
               <button 
-                className="start-new-game-button"
-                onClick={handleStartNewGame}
+                className="back-button" 
+                onClick={handleBackToRoom}
               >
-                开始新一局
+                返回房间等待
               </button>
             )}
-            <button 
-              className="back-button" 
-              onClick={handleBackToHome}
-            >
-              返回首页
-            </button>
           </div>
         </div>
       </div>

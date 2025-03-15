@@ -70,11 +70,17 @@
 }
 
 .other-players-3 {
-  grid-template-columns: 1fr 0 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .other-players-4 {
   grid-template-columns: 1fr 1fr 1fr;
+}
+
+.empty-space {
+  min-height: 150px;
+  background: transparent;
+  visibility: hidden;
 }
 
 .player-area {
