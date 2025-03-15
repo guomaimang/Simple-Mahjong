@@ -45,6 +45,7 @@ const Game = () => {
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggedTile, setDraggedTile] = useState(null);
   const [dragSource, setDragSource] = useState(null);
+  const [showClaimWinConfirmation, setShowClaimWinConfirmation] = useState(false);
 
   // 初始化游戏
   useEffect(() => {
@@ -243,6 +244,25 @@ const Game = () => {
     } catch (error) {
       console.error('Failed to claim win:', error);
     }
+  };
+
+  // 处理宣布胜利按钮点击
+  const handleClaimWinClick = () => {
+    // 点击按钮时显示确认模态框
+    setShowClaimWinConfirmation(true);
+  };
+
+  // 处理确认宣布胜利
+  const handleConfirmClaimWin = () => {
+    // 用户确认后关闭模态框并调用宣布胜利函数
+    setShowClaimWinConfirmation(false);
+    handleClaimWin();
+  };
+
+  // 处理取消宣布胜利
+  const handleCancelClaimWin = () => {
+    // 关闭确认模态框，不执行宣布胜利
+    setShowClaimWinConfirmation(false);
   };
 
   // 处理确认/拒绝胜利
@@ -728,7 +748,7 @@ const Game = () => {
                      action.type === 'HIDE_TILES' ? '暗牌' :
                      action.type === 'CLAIM_WIN' ? '宣布胜利' :
                      action.type === 'CONFIRM_WIN' ? '确认胜利' :
-                     action.type === 'DENY_WIN' ? '拒绝胜利' :
+                     action.type === 'DENY_WIN' ? '拒绝胜利请求' :
                      action.type}
                   </span>
                   {action.data && action.type === 'DISCARD' && (
@@ -751,10 +771,16 @@ const Game = () => {
     return (
       <div className="action-buttons">
         <div className="action-selection">
-          <button onClick={handleDrawTiles}>
+          <button 
+            className="draw-tile-button"
+            onClick={handleDrawTiles}
+          >
             抽牌(余{drawPileCount}张)
           </button>
-          <button onClick={handleClaimWin}>
+          <button 
+            className="claim-win-button"
+            onClick={handleClaimWinClick}
+          >
             宣布胜利
           </button>
         </div>
@@ -763,15 +789,19 @@ const Game = () => {
           <div className="action-confirmation">
             <p>已选择: {selectedTiles.map(t => getTileDisplayName(t)).join(', ')}</p>
             <button 
+              className="confirm-button"
               onClick={handleConfirmAction}
               disabled={selectedTiles.length === 0}
             >
               确认
             </button>
-            <button onClick={() => {
-              setActionType(null);
-              setSelectedTiles([]);
-            }}>
+            <button 
+              className="cancel-button"
+              onClick={() => {
+                setActionType(null);
+                setSelectedTiles([]);
+              }}
+            >
               取消
             </button>
           </div>
@@ -847,6 +877,35 @@ const Game = () => {
               onClick={() => handleWinConfirmation(false)}
             >
               拒绝
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染宣布胜利确认模态框
+  const renderClaimWinConfirmation = () => {
+    if (!showClaimWinConfirmation) return null;
+
+    return (
+      <div className="win-confirmation-overlay">
+        <div className="win-confirmation-modal claim-win-modal">
+          <h2>确认宣布胜利</h2>
+          <p>你确定要宣布自己胜利吗？</p>
+          <p className="win-confirmation-note">注意：宣布胜利后，其他玩家将看到你的所有牌，他们需要确认你的胜利。如果其他玩家拒绝，游戏将继续。</p>
+          <div className="confirmation-buttons">
+            <button 
+              className="confirm-button"
+              onClick={handleConfirmClaimWin}
+            >
+              确认宣布
+            </button>
+            <button 
+              className="cancel-button"
+              onClick={handleCancelClaimWin}
+            >
+              取消
             </button>
           </div>
         </div>
@@ -1224,6 +1283,7 @@ const Game = () => {
       </div>
 
       {renderWinConfirmation()}
+      {renderClaimWinConfirmation()}
       {renderGameEnd()}
     </div>
   );

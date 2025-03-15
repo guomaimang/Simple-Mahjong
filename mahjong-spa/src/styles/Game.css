@@ -582,10 +582,66 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .action-selection button:hover {
   background-color: #e0e0e0;
+}
+
+/* 抽牌按钮样式 */
+.draw-tile-button {
+  background-color: #2196F3 !important; /* 蓝色 - 表示常规操作 */
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.draw-tile-button:hover {
+  background-color: #1976D2 !important; /* 深蓝色 */
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+  transform: translateY(-2px);
+}
+
+/* 宣布胜利按钮样式 */
+.claim-win-button {
+  background-color: #FF9800 !important; /* 橙色 - 表示重要操作 */
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+.claim-win-button:hover {
+  background-color: #F57C00 !important; /* 深橙色 */
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* 确认和取消按钮样式改进 */
+.confirm-button {
+  background-color: #4CAF50 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+  transition: all 0.2s ease;
+}
+
+.confirm-button:hover {
+  background-color: #388E3C !important;
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+  transform: translateY(-2px);
+}
+
+.cancel-button {
+  background-color: #f5f5f5 !important;
+  border: 1px solid #ddd !important;
+  transition: all 0.2s ease;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0 !important;
+  transform: translateY(-2px);
 }
 
 .action-selection button.active {
@@ -679,6 +735,29 @@
 .win-confirmation-modal h2 {
   margin-top: 0;
   color: #333;
+}
+
+/* 宣布胜利确认模态框特定样式 */
+.claim-win-modal {
+  background-color: #fff3e0; /* 淡橙色背景，与宣布胜利按钮颜色相呼应 */
+  border-left: 5px solid #FF9800; /* 左侧橙色边框 */
+}
+
+.claim-win-modal h2 {
+  color: #F57C00; /* 深橙色标题 */
+  border-bottom: 1px solid #FFE0B2; /* 淡橙色底边 */
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.win-confirmation-note {
+  background-color: #FFF8E1; /* 更淡的背景色 */
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 0.9rem;
+  margin: 15px 0;
+  color: #E65100; /* 深橙红色文字 */
+  border-left: 3px solid #FFB74D; /* 浅橙色左边框 */
 }
 
 .confirmation-buttons {
