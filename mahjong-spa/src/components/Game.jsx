@@ -39,6 +39,8 @@ const Game = () => {
   const [showWinConfirmation, setShowWinConfirmation] = useState(false);
   const [draggedTileIndex, setDraggedTileIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [draggedTile, setDraggedTile] = useState(null);
+  const [dragSource, setDragSource] = useState(null);
 
   // 初始化游戏
   useEffect(() => {
@@ -177,12 +179,6 @@ const Game = () => {
 
     try {
       switch (actionType) {
-        case 'discard':
-          await discardTile(roomId, selectedTiles[0]);
-          break;
-        case 'take':
-          await takeTile(roomId, selectedTiles[0]);
-          break;
         case 'reveal':
           // 明牌操作可以选择多张牌
           await revealTiles(roomId, selectedTiles);
@@ -476,16 +472,81 @@ const Game = () => {
 
   // 渲染牌桌中央区域
   const renderTableCenter = () => {
+    // 处理弃牌区拖拽开始
+    const handleDiscardDragStart = (e, tile) => {
+      // 使用更通用的格式存储牌信息
+      e.dataTransfer.setData('text/plain', JSON.stringify(tile));
+      e.dataTransfer.setData('application/json', JSON.stringify(tile));
+      e.dataTransfer.effectAllowed = 'move';
+      
+      // 设置拖动效果
+      setDraggedTile(tile);
+      setDragSource('discard');
+      
+      console.log('拖动弃牌开始:', tile);
+      
+      setTimeout(() => {
+        e.target.classList.add('dragging');
+      }, 0);
+    };
+
+    // 处理弃牌区拖拽结束
+    const handleDiscardDragEnd = (e) => {
+      e.target.classList.remove('dragging');
+      setDraggedTile(null);
+      setDragSource(null);
+    };
+
+    // 处理弃牌区拖放释放事件
+    const handleDiscardDrop = async (e) => {
+      e.preventDefault();
+      if (dragSource === 'hand') {
+        const tile = draggedTile;
+        if (tile) {
+          try {
+            await discardTile(roomId, tile);
+            setDraggedTile(null);
+            setDragSource(null);
+          } catch (error) {
+            console.error('Failed to discard tile:', error);
+          }
+        }
+      }
+    };
+
+    // 处理弃牌区域的拖动悬停
+    const handleDiscardDragOver = (e) => {
+      e.preventDefault();
+      if (dragSource === 'hand') {
+        e.currentTarget.classList.add('drag-over');
+      }
+    };
+
+    // 处理弃牌区域拖动离开
+    const handleDiscardDragLeave = (e) => {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+    };
+
     return (
       <div className="table-center">
-        <div className="discard-pile">
+        <div 
+          className="discard-pile"
+          onDragOver={handleDiscardDragOver}
+          onDragLeave={handleDiscardDragLeave}
+          onDrop={handleDiscardDrop}
+        >
           <h3>弃牌区</h3>
+          <div className="discard-hint">将手牌拖到此区域出牌</div>
           <div className="tiles-container">
             {discardPile.slice().reverse().map((tile, idx) => (
               <div 
                 key={idx} 
                 className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
                 onClick={() => handleTileSelect(tile)}
+                draggable={true}
+                onDragStart={(e) => handleDiscardDragStart(e, tile)}
+                onDragEnd={handleDiscardDragEnd}
               >
                 {getTileDisplayName(tile)}
               </div>
@@ -549,18 +610,6 @@ const Game = () => {
     return (
       <div className="action-buttons">
         <div className="action-selection">
-          <button 
-            className={actionType === 'discard' ? 'active' : ''}
-            onClick={() => handleActionClick('discard')}
-          >
-            打出牌
-          </button>
-          <button 
-            className={actionType === 'take' ? 'active' : ''}
-            onClick={() => handleActionClick('take')}
-          >
-            拿取牌
-          </button>
           <button 
             className={actionType === 'reveal' ? 'active' : ''}
             onClick={() => handleActionClick('reveal')}
@@ -685,6 +734,8 @@ const Game = () => {
     const handleDragStart = (e, index) => {
       e.dataTransfer.setData('text/plain', index);
       setDraggedTileIndex(index);
+      setDraggedTile(playerHand[index]);
+      setDragSource('hand');
       setTimeout(() => {
         e.target.classList.add('dragging');
       }, 0);
@@ -705,10 +756,29 @@ const Game = () => {
       e.preventDefault();
     };
 
-    const handleDrop = (e, dropIndex) => {
+    const handleDrop = async (e, dropIndex) => {
       e.preventDefault();
+      e.stopPropagation(); // 防止事件冒泡到父元素
+      
+      // 如果是从弃牌区拖来的牌，进行拿牌操作
+      if (dragSource === 'discard' && draggedTile) {
+        try {
+          console.log('准备拿取弃牌:', draggedTile);
+          if (!draggedTile.id) {
+            console.error('拖拽的牌没有ID属性:', draggedTile);
+            return;
+          }
+          await takeTile(roomId, draggedTile);
+          setDraggedTile(null);
+          setDragSource(null);
+        } catch (error) {
+          console.error('拿牌失败:', error);
+        }
+      }
+      
+      // 手牌之间的排序
       const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
-      if (dragIndex === dropIndex) return;
+      if (isNaN(dragIndex) || dragIndex === dropIndex) return;
 
       // 创建新数组并改变其中元素的顺序
       const newHand = [...playerHand];
@@ -716,7 +786,6 @@ const Game = () => {
       newHand.splice(dropIndex, 0, draggedTile);
       
       // 使用store中现有的方法更新playerHand
-      // 看起来store中直接使用set方法来更新状态
       useGameStore.setState({ playerHand: newHand });
       
       // 重置状态
@@ -763,9 +832,43 @@ const Game = () => {
         )}
         
         {/* 我的手牌区域 */}
-        <div className="my-hand-tiles">
+        <div 
+          className="my-hand-tiles"
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (dragSource === 'discard') {
+              e.currentTarget.classList.add('hand-drag-over');
+            }
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('hand-drag-over');
+          }}
+          onDrop={async (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('hand-drag-over');
+            // 如果是从弃牌区拖来的牌，进行拿牌操作
+            if (dragSource === 'discard' && draggedTile) {
+              try {
+                console.log('准备拿取弃牌:', draggedTile);
+                if (!draggedTile.id) {
+                  console.error('拖拽的牌没有ID属性:', draggedTile);
+                  return;
+                }
+                await takeTile(roomId, draggedTile);
+                setDraggedTile(null);
+                setDragSource(null);
+              } catch (error) {
+                console.error('拿牌失败:', error);
+              }
+            }
+          }}
+        >
           <div className="hand-title">
             <span className="hand-label">我的手牌</span>
+          </div>
+          <div className="drag-area-hint">
+            将弃牌拖到此区域拿牌
           </div>
           <div className="tiles-container">
             {playerHand.map((tile, index) => (

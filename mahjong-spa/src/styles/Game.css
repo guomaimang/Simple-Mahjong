@@ -250,15 +250,22 @@
 }
 
 .discard-pile {
-  padding: 0.5rem;
-  background-color: #f5f5f5;
+  width: 100%;
+  background-color: #f9f9f9;
   border-radius: 8px;
-  height: 100%;
-  max-height: 100%;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box; /* 确保padding计入总高度 */
-  overflow: hidden; /* 防止内容溢出 */
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  max-height: 250px;
+  transition: all 0.2s ease;
+}
+
+/* 添加弃牌区拖放样式 */
+.discard-pile.drag-over {
+  background-color: #e8f4ff;
+  box-shadow: 0 0 8px rgba(0, 120, 255, 0.5);
+  border: 2px dashed #0078ff;
 }
 
 .discard-pile h3 {
@@ -275,6 +282,24 @@
   flex-grow: 1;
   padding-right: 5px;
   max-height: calc(100% - 30px); /* 减去标题高度 */
+}
+
+.discard-hint {
+  text-align: center;
+  padding: 6px;
+  margin-bottom: 10px;
+  background-color: #ffecb3;
+  border: 1px dashed #ffa000;
+  border-radius: 4px;
+  color: #e65100;
+  font-size: 0.9rem;
+}
+
+.discard-pile.drag-over .discard-hint {
+  background-color: #e8f4ff;
+  border-color: #0078ff;
+  color: #0078ff;
+  font-weight: bold;
 }
 
 .recent-actions {
@@ -398,32 +423,37 @@
 /* 手牌区域样式 */
 .my-hand-tiles {
   padding-top: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+/* 手牌区域接收拖放时的样式 */
+.my-hand-tiles.hand-drag-over {
+  background-color: #e8f4ff;
+  box-shadow: 0 0 10px rgba(0, 120, 255, 0.4);
+  border-radius: 8px;
+  border: 2px dashed #0078ff;
 }
 
 .hand-title {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #eee;
 }
 
 .hand-title .hand-label {
   font-weight: 600;
-  color: #555;
-  font-size: 0.95rem;
-  position: relative;
-  padding-left: 0.75rem;
+  color: #333;
+  display: flex;
+  align-items: center;
 }
 
-.hand-title .hand-label:before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 16px;
-  background-color: #4caf50;
-  border-radius: 2px;
+.hand-title .hand-tip {
+  font-size: 0.8rem;
+  color: #0078ff;
+  font-style: italic;
 }
 
 .tiles-container {
@@ -468,12 +498,14 @@
 
 .tile.dragging {
   opacity: 0.5;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+  z-index: 100;
 }
 
 .tile.drag-over {
-  border: 2px dashed #2196f3;
-  background-color: #e3f2fd;
+  background-color: #e8f4ff;
+  box-shadow: 0 0 5px rgba(0, 120, 255, 0.5);
+  border: 2px dashed #0078ff;
 }
 
 .tile.hidden {
@@ -501,9 +533,9 @@
 
 .action-selection {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .action-selection button {
@@ -568,6 +600,22 @@
 .action-confirmation button:disabled {
   background-color: #9e9e9e;
   cursor: not-allowed;
+}
+
+/* 拖放提示样式 */
+.drag-drop-tip {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background-color: #e8f4ff;
+  border-left: 4px solid #0078ff;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.drag-drop-tip p {
+  margin: 0;
+  color: #0055b3;
 }
 
 /* 胜利确认对话框 */
@@ -746,4 +794,42 @@
 
 .error-container .error-message {
   border-left: 4px solid #f44336;
+}
+
+/* 添加拖放相关的动画效果 */
+@keyframes tile-hover {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0); }
+}
+
+.tile[draggable="true"]:hover {
+  animation: tile-hover 0.5s ease;
+  z-index: 10;
+  cursor: grab;
+}
+
+.tile[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.drag-area-hint {
+  text-align: center;
+  padding: 8px;
+  margin-bottom: 10px;
+  background-color: #e8f5e9;
+  border: 1px dashed #4caf50;
+  border-radius: 4px;
+  color: #43a047;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.my-hand-tiles.hand-drag-over .drag-area-hint {
+  background-color: #e8f4ff;
+  border-color: #0078ff;
+  color: #0078ff;
+  font-weight: bold;
 } 
