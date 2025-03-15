@@ -669,11 +669,19 @@ const Game = () => {
 
     return (
       <div className="player-hand">
+        {/* 玩家信息区域 */}
+        <div className="player-self-info">
+          <div className="player-name">
+            <span>{getPlayerDisplayName(user.email)}</span>
+            {user.email === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
+          </div>
+        </div>
+        
         {/* 我的明牌区域 */}
         {myRevealedTiles.length > 0 && (
           <div className="my-revealed-tiles">
             <div className="hand-title">
-              <span>我的明牌</span>
+              <span className="hand-label">我的明牌</span>
             </div>
             <div className="tiles-container">
               {myRevealedTiles.map((tile, index) => (
@@ -688,29 +696,32 @@ const Game = () => {
           </div>
         )}
         
-        <div className="hand-title">
-          <span>我的手牌</span>
-        </div>
-        <div className="tiles-container">
-          {playerHand.map((tile, index) => (
-            <div 
-              key={tile.id} 
-              className={`tile 
-                ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
-                ${draggedTileIndex === index ? 'dragging' : ''} 
-                ${dragOverIndex === index ? 'drag-over' : ''}
-                ${isRevealedTile(tile) ? 'my-revealed' : ''}`}
-              onClick={() => actionType === 'discard' || actionType === 'reveal' ? handleTileSelect(tile) : null}
-              draggable={true}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnd={handleDragEnd}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, index)}
-            >
-              {getTileDisplayName(tile)}
-            </div>
-          ))}
+        {/* 我的手牌区域 */}
+        <div className="my-hand-tiles">
+          <div className="hand-title">
+            <span className="hand-label">我的手牌</span>
+          </div>
+          <div className="tiles-container">
+            {playerHand.map((tile, index) => (
+              <div 
+                key={tile.id} 
+                className={`tile 
+                  ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
+                  ${draggedTileIndex === index ? 'dragging' : ''} 
+                  ${dragOverIndex === index ? 'drag-over' : ''}
+                  ${isRevealedTile(tile) ? 'my-revealed' : ''}`}
+                onClick={() => actionType === 'discard' || actionType === 'reveal' ? handleTileSelect(tile) : null}
+                draggable={true}
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+              >
+                {getTileDisplayName(tile)}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

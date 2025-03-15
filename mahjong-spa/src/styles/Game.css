@@ -110,14 +110,22 @@
 }
 
 .dealer-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   background-color: #ffd700;
   color: #333;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.7rem;
   border-radius: 4px;
-  margin-left: 0.5rem;
   font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-left: 0.5rem;
+}
+
+.dealer-badge:before {
+  content: '★';
+  margin-right: 4px;
+  font-size: 0.85rem;
 }
 
 .relationship-badge {
@@ -257,6 +265,26 @@
   border-radius: 8px;
 }
 
+/* 玩家自己的信息区域 */
+.player-self-info {
+  padding: 0.75rem 0.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.player-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 /* 明牌区域样式 */
 .my-revealed-tiles {
   margin-bottom: 1rem;
@@ -264,15 +292,35 @@
   border-bottom: 1px dashed #ccc;
 }
 
-.hand-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
+/* 手牌区域样式 */
+.my-hand-tiles {
+  padding-top: 0.5rem;
 }
 
-.hand-title span {
-  font-weight: 500;
+.hand-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.hand-title .hand-label {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95rem;
+  position: relative;
+  padding-left: 0.75rem;
+}
+
+.hand-title .hand-label:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  background-color: #4caf50;
+  border-radius: 2px;
 }
 
 .tiles-container {
