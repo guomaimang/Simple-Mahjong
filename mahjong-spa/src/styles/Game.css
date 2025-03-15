@@ -195,6 +195,13 @@
   border-radius: 8px;
 }
 
+/* 明牌区域样式 */
+.my-revealed-tiles {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #ccc;
+}
+
 .hand-title {
   display: flex;
   justify-content: space-between;
@@ -274,6 +281,13 @@
 
 .tile.revealed {
   background-color: #e8f5e9;
+}
+
+/* 用户自己的明牌样式 */
+.tile.my-revealed {
+  background-color: #ffecb3; /* 淡黄色背景 */
+  border: 1px solid #ffa000; /* 橙色边框 */
+  color: #e65100; /* 深橙色文字 */
 }
 
 /* 操作按钮区域 */

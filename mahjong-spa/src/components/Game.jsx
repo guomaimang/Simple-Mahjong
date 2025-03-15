@@ -325,8 +325,36 @@ const Game = () => {
       setDragOverIndex(null);
     };
 
+    // 检查牌是否是用户自己已明的牌
+    const isRevealedTile = (tile) => {
+      if (!user || !user.email || !revealedTiles[user.email]) return false;
+      return revealedTiles[user.email].some(revealedTile => revealedTile.id === tile.id);
+    };
+
+    // 获取当前用户的明牌
+    const myRevealedTiles = user && user.email ? revealedTiles[user.email] || [] : [];
+
     return (
       <div className="player-hand">
+        {/* 我的明牌区域 */}
+        {myRevealedTiles.length > 0 && (
+          <div className="my-revealed-tiles">
+            <div className="hand-title">
+              <span>我的明牌</span>
+            </div>
+            <div className="tiles-container">
+              {myRevealedTiles.map((tile, index) => (
+                <div 
+                  key={`revealed-${tile.id}`} 
+                  className="tile my-revealed"
+                >
+                  {getTileDisplayName(tile)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div className="hand-title">
           <span>我的手牌</span>
           <button onClick={sortPlayerHand}>排序</button>
@@ -335,9 +363,11 @@ const Game = () => {
           {playerHand.map((tile, index) => (
             <div 
               key={tile.id} 
-              className={`tile ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
+              className={`tile 
+                ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''} 
                 ${draggedTileIndex === index ? 'dragging' : ''} 
-                ${dragOverIndex === index ? 'drag-over' : ''}`}
+                ${dragOverIndex === index ? 'drag-over' : ''}
+                ${isRevealedTile(tile) ? 'my-revealed' : ''}`}
               onClick={() => actionType === 'discard' || actionType === 'reveal' ? handleTileSelect(tile) : null}
               draggable={true}
               onDragStart={(e) => handleDragStart(e, index)}
