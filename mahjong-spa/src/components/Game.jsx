@@ -238,7 +238,27 @@ const Game = () => {
   // 获取玩家显示名称
   const getPlayerDisplayName = (email) => {
     const player = players.find(p => p.email === email);
-    return player ? (player.nickname || email) : email;
+    return player ? player.nickname || email.split('@')[0] : email.split('@')[0];
+  };
+
+  // 获取玩家关系标识（上家、下家、对家）
+  const getPlayerRelationship = (relativePosition) => {
+    // 获取总玩家数
+    const playerCount = Object.keys(gameState?.playerPositions || {}).length;
+    
+    if (playerCount === 2) {
+      // 两人游戏：另一个人是对家
+      return "对家";
+    } else if (playerCount === 3) {
+      // 三人游戏：1是上家，2是下家
+      return relativePosition === 1 ? "上家" : "下家";
+    } else if (playerCount === 4) {
+      // 四人游戏：1是上家，2是对家，3是下家
+      if (relativePosition === 1) return "上家";
+      if (relativePosition === 2) return "对家";
+      if (relativePosition === 3) return "下家";
+    }
+    return "";
   };
 
   // 获取牌的显示名称
@@ -401,12 +421,18 @@ const Game = () => {
           const [playerEmail] = playerEntry;
           const playerRevealedTiles = revealedTiles[playerEmail] || [];
           const playerHandCount = playerHandCounts[playerEmail] || 0;
+          const relationship = getPlayerRelationship(relPos);
           
           return (
             <div key={relPos} className={`player-area position-${relPos}`}>
               <div className="player-info">
                 {getPlayerDisplayName(playerEmail)}
                 {playerEmail === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
+                {relationship && (
+                  <span className={`relationship-badge ${relationship === "上家" ? "shangjiabadge" : relationship === "下家" ? "xiajiabadge" : "duijiabadge"}`}>
+                    {relationship}
+                  </span>
+                )}
               </div>
               <div className="player-tiles">
                 {playerRevealedTiles.map((tile, idx) => (
@@ -459,27 +485,38 @@ const Game = () => {
         <div className="recent-actions">
           <h3>最近操作</h3>
           <div className="actions-list">
-            {recentActions.slice().reverse().map((action, idx) => (
-              <div key={idx} className="action-item">
-                <span className="action-player">{getPlayerDisplayName(action.playerEmail)}:</span>
-                <span className="action-type">
-                  {action.type === 'DRAW' ? '抽牌' :
-                   action.type === 'DISCARD' ? '打出' :
-                   action.type === 'TAKE_TILE' ? '拿取' :
-                   action.type === 'REVEAL_TILES' ? '明牌' :
-                   action.type === 'CLAIM_WIN' ? '宣布胜利' :
-                   action.type === 'CONFIRM_WIN' ? '确认胜利' :
-                   action.type === 'DENY_WIN' ? '拒绝胜利' :
-                   action.type}
-                </span>
-                {action.data && action.type === 'DISCARD' && (
-                  <span className="action-data">{getTileDisplayName(action.data)}</span>
-                )}
-                {action.data && action.type === 'TAKE_TILE' && (
-                  <span className="action-data">{getTileDisplayName(action.data)}</span>
-                )}
-              </div>
-            ))}
+            {recentActions.slice().reverse().map((action, idx) => {
+              // 获取操作玩家的相对位置和关系标识
+              const playerPos = getPlayerPosition(action.playerEmail);
+              const relativePos = getRelativePosition(playerPos);
+              // 如果是用户自己，显示"你自己"，否则显示相应的关系
+              const relationship = user.email === action.playerEmail ? "你自己" : getPlayerRelationship(relativePos);
+              
+              return (
+                <div key={idx} className="action-item">
+                  <span className="action-player">
+                    {getPlayerDisplayName(action.playerEmail)}
+                    {relationship && <span className="relationship-text">{` (${relationship})`}</span>}:
+                  </span>
+                  <span className="action-type">
+                    {action.type === 'DRAW' ? '抽牌' :
+                     action.type === 'DISCARD' ? '打出' :
+                     action.type === 'TAKE_TILE' ? '拿取' :
+                     action.type === 'REVEAL_TILES' ? '明牌' :
+                     action.type === 'CLAIM_WIN' ? '宣布胜利' :
+                     action.type === 'CONFIRM_WIN' ? '确认胜利' :
+                     action.type === 'DENY_WIN' ? '拒绝胜利' :
+                     action.type}
+                  </span>
+                  {action.data && action.type === 'DISCARD' && (
+                    <span className="action-data">{getTileDisplayName(action.data)}</span>
+                  )}
+                  {action.data && action.type === 'TAKE_TILE' && (
+                    <span className="action-data">{getTileDisplayName(action.data)}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -539,11 +576,20 @@ const Game = () => {
   const renderWinConfirmation = () => {
     if (!showWinConfirmation) return null;
 
+    // 获取宣布胜利者的关系标识
+    const winnerPos = getPlayerPosition(pendingWinner);
+    const relativePos = getRelativePosition(winnerPos);
+    const relationship = user.email === pendingWinner ? "你自己" : getPlayerRelationship(relativePos);
+
     return (
       <div className="win-confirmation-overlay">
         <div className="win-confirmation-modal">
           <h2>胜利确认</h2>
-          <p>{getPlayerDisplayName(pendingWinner)}宣布自己胜利了！</p>
+          <p>
+            {getPlayerDisplayName(pendingWinner)}
+            {relationship && <span className="relationship-text">{` (${relationship})`}</span>}
+            宣布自己胜利了！
+          </p>
           <p>你同意吗？</p>
           <div className="confirmation-buttons">
             <button 

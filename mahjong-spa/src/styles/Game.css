@@ -72,20 +72,46 @@
 }
 
 .player-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .dealer-badge {
-  padding: 0.25rem 0.5rem;
-  background-color: #ff9800;
-  color: white;
+  display: inline-block;
+  background-color: #ffd700;
+  color: #333;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
   border-radius: 4px;
-  font-size: 0.8rem;
   margin-left: 0.5rem;
+  font-weight: bold;
+}
+
+.relationship-badge {
+  display: inline-block;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+/* 不同关系标识的颜色 */
+.relationship-badge.shangjiabadge {
+  background-color: #2196F3; /* 蓝色 */
+}
+
+.relationship-badge.xiajiabadge {
+  background-color: #FF9800; /* 橙色 */
+}
+
+.relationship-badge.duijiabadge {
+  background-color: #E91E63; /* 粉红色 */
 }
 
 .player-tiles {
@@ -176,6 +202,13 @@
 .action-player {
   font-weight: 500;
   margin-right: 0.5rem;
+}
+
+/* 在动作列表中显示上下家信息的样式 */
+.action-player .relationship-text {
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
 }
 
 .action-type {
