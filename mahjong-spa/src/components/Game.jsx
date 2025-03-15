@@ -418,10 +418,6 @@ const Game = () => {
   const renderTableCenter = () => {
     return (
       <div className="table-center">
-        <div className="draw-pile">
-          {/* 这里不再显示牌库剩余和抽牌按钮 */}
-        </div>
-        
         <div className="discard-pile">
           <h3>弃牌区</h3>
           <div className="tiles-container">

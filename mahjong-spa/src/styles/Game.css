@@ -1,7 +1,10 @@
 .game-container {
   max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 1rem auto;
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .game-header {
@@ -33,9 +36,9 @@
 
 .game-table {
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
-  gap: 1rem;
-  height: calc(100vh - 100px);
+  grid-template-rows: auto auto auto auto;
+  gap: 0.75rem;
+  height: auto;
 }
 
 /* 其他玩家区域 */
@@ -43,6 +46,9 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 1rem;
+  height: auto;
+  min-height: 100px;
+  max-height: 150px;
 }
 
 /* 不同玩家人数时的布局 */
@@ -71,7 +77,7 @@
   padding: 0.5rem;
   background-color: #f5f5f5;
   border-radius: 8px;
-  min-height: 100px;
+  min-height: 80px;
 }
 
 .player-area.empty {
@@ -160,18 +166,18 @@
 /* 牌桌中央区域 */
 .table-center {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
+  grid-template-columns: 2fr 1fr;
   gap: 1rem;
   padding: 1rem;
   background-color: #e8f5e9;
   border-radius: 8px;
+  height: 220px; /* 稍微减小高度 */
+  box-sizing: border-box; /* 确保padding计入总高度 */
 }
 
+/* 保留这些样式但不再使用 */
 .draw-pile {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  display: none;
 }
 
 .pile-info {
@@ -201,9 +207,12 @@
   padding: 0.5rem;
   background-color: #f5f5f5;
   border-radius: 8px;
-  max-height: 250px;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box; /* 确保padding计入总高度 */
+  overflow: hidden; /* 防止内容溢出 */
 }
 
 .discard-pile h3 {
@@ -217,17 +226,21 @@
   flex-wrap: wrap;
   gap: 0.25rem;
   overflow-y: auto;
-  max-height: calc(100% - 30px);
+  flex-grow: 1;
   padding-right: 5px;
+  max-height: calc(100% - 30px); /* 减去标题高度 */
 }
 
 .recent-actions {
   padding: 0.5rem;
   background-color: #f5f5f5;
   border-radius: 8px;
-  max-height: 250px;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box; /* 确保padding计入总高度 */
+  overflow: hidden; /* 防止内容溢出 */
 }
 
 .recent-actions h3 {
@@ -237,14 +250,40 @@
 }
 
 .actions-list {
-  max-height: calc(100% - 30px);
+  flex-grow: 1;
   overflow-y: auto;
+  max-height: calc(100% - 30px); /* 减去标题高度 */
 }
 
 .action-item {
   padding: 0.25rem 0;
   border-bottom: 1px solid #e0e0e0;
   font-size: 0.9rem;
+}
+
+/* 第一条操作（最新的）突出显示 */
+.action-item:first-child {
+  padding: 0.5rem;
+  background-color: #ffebee; /* 改为浅红色背景 */
+  border-radius: 4px;
+  /* 移除左侧边框 */
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.action-item:first-child .action-player {
+  color: #c62828; /* 更新为与红色背景搭配的颜色 */
+}
+
+.action-item:first-child .action-type {
+  color: #333;
+  font-weight: 500;
+}
+
+.action-item:first-child .action-data {
+  color: #c62828; /* 更新为与红色背景搭配的颜色 */
+  font-weight: 600;
 }
 
 .action-item:last-child {
@@ -278,12 +317,15 @@
   padding: 1rem;
   background-color: #f5f5f5;
   border-radius: 8px;
+  height: auto;
+  min-height: min-content;
+  overflow: visible;
 }
 
 /* 玩家自己的信息区域 */
 .player-self-info {
-  padding: 0.75rem 0.5rem;
-  margin-bottom: 1rem;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -302,14 +344,14 @@
 
 /* 明牌区域样式 */
 .my-revealed-tiles {
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px dashed #ccc;
 }
 
 /* 手牌区域样式 */
 .my-hand-tiles {
-  padding-top: 0.5rem;
+  padding-top: 0.25rem;
 }
 
 .hand-title {
@@ -405,7 +447,7 @@
 
 /* 操作按钮区域 */
 .action-buttons {
-  padding: 1rem;
+  padding: 0.75rem;
   background-color: #f5f5f5;
   border-radius: 8px;
 }
@@ -414,7 +456,7 @@
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .action-selection button {
