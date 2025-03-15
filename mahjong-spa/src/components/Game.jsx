@@ -29,6 +29,7 @@ const Game = () => {
     discardTile,
     takeTile,
     revealTiles,
+    hideTiles,
     claimWin,
     confirmWin,
     resetGameState
@@ -149,8 +150,27 @@ const Game = () => {
   const handleTileSelect = (tile) => {
     if (!actionType) return;
 
-    // 如果是明牌操作，允许选择多张牌
+    // 获取当前用户的明牌
+    const myRevealedTiles = user && user.email ? revealedTiles[user.email] || [] : [];
+    
+    // 如果是明牌操作，允许选择手牌中的牌
     if (actionType === 'reveal') {
+      // 检查是否已经明牌的牌，已经明牌的不能再次明牌
+      const isAlreadyRevealed = myRevealedTiles.some(t => t.id === tile.id);
+      if (isAlreadyRevealed) return;
+      
+      if (selectedTiles.some(t => t.id === tile.id)) {
+        setSelectedTiles(selectedTiles.filter(t => t.id !== tile.id));
+      } else {
+        setSelectedTiles([...selectedTiles, tile]);
+      }
+    } 
+    // 如果是暗牌操作，只允许选择已明示的牌
+    else if (actionType === 'hide') {
+      // 检查是否是已明示的牌
+      const isRevealed = myRevealedTiles.some(t => t.id === tile.id);
+      if (!isRevealed) return;
+      
       if (selectedTiles.some(t => t.id === tile.id)) {
         setSelectedTiles(selectedTiles.filter(t => t.id !== tile.id));
       } else {
@@ -182,6 +202,10 @@ const Game = () => {
         case 'reveal':
           // 明牌操作可以选择多张牌
           await revealTiles(roomId, selectedTiles);
+          break;
+        case 'hide':
+          // 暗牌操作 - 隐藏已明示的牌
+          await hideTiles(roomId, selectedTiles);
           break;
         default:
           break;
@@ -611,6 +635,9 @@ const Game = () => {
 
   // 渲染操作按钮
   const renderActionButtons = () => {
+    // 获取当前用户的明牌
+    const myRevealedTiles = user && user.email ? revealedTiles[user.email] || [] : [];
+    
     return (
       <div className="action-buttons">
         <div className="action-selection">
@@ -620,6 +647,14 @@ const Game = () => {
           >
             明牌
           </button>
+          {myRevealedTiles.length > 0 && (
+            <button 
+              className={actionType === 'hide' ? 'active' : ''}
+              onClick={() => handleActionClick('hide')}
+            >
+              暗牌
+            </button>
+          )}
           <button onClick={handleDrawTiles}>
             抽牌(余{drawPileCount}张)
           </button>
@@ -830,7 +865,8 @@ const Game = () => {
               {myRevealedTiles.map((tile, index) => (
                 <div 
                   key={`revealed-${tile.id}`} 
-                  className="tile my-revealed"
+                  className={`tile my-revealed ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
+                  onClick={() => handleTileSelect(tile)}
                 >
                   {getTileDisplayName(tile)}
                 </div>

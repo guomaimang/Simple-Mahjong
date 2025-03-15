@@ -258,6 +258,12 @@ class WebSocketService {
     return this.send('REVEAL_TILES', { roomId, tileIds });
   }
 
+  hideTiles(roomId, tiles) {
+    // 从每个tile对象中提取id，支持多张牌暗牌
+    const tileIds = tiles.map(tile => tile.id);
+    return this.send('HIDE_TILES', { roomId, tileIds });
+  }
+
   claimWin(roomId) {
     return this.send('CLAIM_WIN', { roomId });
   }

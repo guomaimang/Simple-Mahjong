@@ -16,6 +16,7 @@ public class GameAction {
         DISCARD,       // Discard a tile
         TAKE_TILE,     // Take a tile from discard pile
         REVEAL_TILES,  // Reveal tiles
+        HIDE_TILES,    // Hide previously revealed tiles
         CLAIM_WIN,     // Claim victory
         CONFIRM_WIN,   // Confirm another player's win
         DENY_WIN       // Deny another player's win

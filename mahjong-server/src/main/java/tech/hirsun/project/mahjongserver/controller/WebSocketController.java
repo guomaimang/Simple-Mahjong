@@ -106,6 +106,9 @@ public class WebSocketController extends TextWebSocketHandler {
                 case "REVEAL_TILES":
                     handleRevealTiles(userEmail, data);
                     break;
+                case "HIDE_TILES":
+                    handleHideTiles(userEmail, data);
+                    break;
                 case "CLAIM_WIN":
                     handleClaimWin(userEmail, data);
                     break;
@@ -380,6 +383,43 @@ public class WebSocketController extends TextWebSocketHandler {
         if (room != null) {
             webSocketService.sendGameMessage(roomId, "ACTION", Map.of(
                 "type", "REVEAL_TILES",
+                "playerEmail", userEmail,
+                "tileIds", tileIds
+            ));
+            
+            // Send updated game state to each player
+            for (String playerEmail : room.getPlayerEmails()) {
+                Map<String, Object> gameState = gameService.getGameState(roomId, playerEmail);
+                webSocketService.sendMessage(playerEmail, "GAME_STATE", gameState);
+            }
+        }
+    }
+
+    /**
+     * Handle hide tiles message
+     */
+    private void handleHideTiles(String userEmail, JsonNode data) {
+        String roomId = data.get("roomId").asText();
+        JsonNode tileIdsNode = data.get("tileIds");
+        
+        // Convert JSON array to List
+        List<Integer> tileIds = new ArrayList<>();
+        for (JsonNode idNode : tileIdsNode) {
+            tileIds.add(idNode.asInt());
+        }
+        
+        // Hide tiles
+        boolean hidden = gameService.hideTiles(roomId, userEmail, tileIds);
+        if (!hidden) {
+            webSocketService.sendErrorMessage(userEmail, "HIDE_FAILED", "Failed to hide tiles");
+            return;
+        }
+        
+        // Notify all players about the action
+        Room room = roomService.getRoomById(roomId);
+        if (room != null) {
+            webSocketService.sendGameMessage(roomId, "ACTION", Map.of(
+                "type", "HIDE_TILES",
                 "playerEmail", userEmail,
                 "tileIds", tileIds
             ));

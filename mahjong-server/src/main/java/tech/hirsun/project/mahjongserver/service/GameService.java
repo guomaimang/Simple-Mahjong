@@ -253,6 +253,52 @@ public class GameService {
     }
 
     /**
+     * Hide previously revealed tiles
+     * @param roomId Room ID
+     * @param userEmail User's email
+     * @param tileIds IDs of tiles to hide
+     * @return true if tiles hidden successfully, false otherwise
+     */
+    public boolean hideTiles(String roomId, String userEmail, List<Integer> tileIds) {
+        Room room = roomRepository.findById(roomId);
+        if (room == null || room.getStatus() != Room.RoomStatus.PLAYING || !room.getPlayerEmails().contains(userEmail)) {
+            return false;
+        }
+        
+        Game game = room.getCurrentGame();
+        if (game == null || game.getStatus() != Game.GameStatus.IN_PROGRESS) {
+            return false;
+        }
+        
+        // Find tiles in player's revealed tiles
+        List<Tile> revealedTiles = game.getPlayerRevealedTiles().getOrDefault(userEmail, new ArrayList<>());
+        List<Tile> tilesToHide = new ArrayList<>();
+        
+        for (Integer tileId : tileIds) {
+            for (Tile tile : revealedTiles) {
+                if (tile.getId() == tileId) {
+                    tilesToHide.add(tile);
+                    break;
+                }
+            }
+        }
+        
+        if (!tilesToHide.isEmpty()) {
+            // Hide tiles
+            game.hidePlayerTiles(userEmail, tilesToHide);
+            
+            // Record action
+            game.addAction(new GameAction(userEmail, GameAction.ActionType.HIDE_TILES, tilesToHide));
+            
+            // Save room with updated game
+            roomRepository.save(room);
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
      * Claim victory
      * @param roomId Room ID
      * @param userEmail User's email

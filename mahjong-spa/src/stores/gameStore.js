@@ -349,6 +349,20 @@ export const useGameStore = create((set, get) => ({
     }
   },
 
+  // 暗牌（隐藏明牌）
+  hideTiles: async (roomId, tiles) => {
+    set({ loading: true, error: null });
+    try {
+      await websocketService.hideTiles(roomId, tiles);
+      set({ loading: false });
+    } catch (error) {
+      set({ 
+        loading: false, 
+        error: error.message,
+      });
+    }
+  },
+
   // 宣布胜利
   claimWin: async (roomId) => {
     set({ loading: true, error: null });

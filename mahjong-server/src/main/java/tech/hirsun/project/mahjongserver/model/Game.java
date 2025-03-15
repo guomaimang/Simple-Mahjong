@@ -117,6 +117,15 @@ public class Game {
         playerHands.getOrDefault(playerEmail, new ArrayList<>()).removeAll(tiles);
     }
 
+    // Hide previously revealed tiles
+    public void hidePlayerTiles(String playerEmail, List<Tile> tiles) {
+        List<Tile> revealedTiles = playerRevealedTiles.getOrDefault(playerEmail, new ArrayList<>());
+        List<Tile> playerHand = playerHands.computeIfAbsent(playerEmail, k -> new ArrayList<>());
+        
+        revealedTiles.removeAll(tiles);
+        playerHand.addAll(tiles);
+    }
+
     // Custom getters with defensive copying
     public List<Tile> getDrawPile() {
         return new ArrayList<>(drawPile);
