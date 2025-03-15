@@ -428,81 +428,82 @@
 
 /* 明牌区域样式 */
 .my-revealed-tiles {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px dashed #ccc;
-}
-
-/* 手牌区域样式 */
-.my-hand-tiles {
-  padding-top: 0.25rem;
-  transition: all 0.2s ease;
-}
-
-/* 手牌区域接收拖放时的样式 */
-.my-hand-tiles.hand-drag-over {
-  background-color: #e8f4ff;
-  box-shadow: 0 0 10px rgba(0, 120, 255, 0.4);
+  padding: 0.75rem;
+  background-color: #f0f7ff; /* 浅蓝色背景，区分于手牌区 */
   border-radius: 8px;
-  border: 2px dashed #0078ff;
+  margin-bottom: 1rem;
+  border: 1px solid #d0e4ff;
+  transition: all 0.2s ease-in-out;
+  position: relative; /* 为拖拽提示定位 */
 }
 
-.hand-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid #eee;
+.my-revealed-tiles.revealed-drag-over {
+  background-color: #e0efff;
+  border-color: #4a6fa5;
+  box-shadow: 0 0 8px rgba(74, 111, 165, 0.3);
 }
 
-.hand-title .hand-label {
-  font-weight: 600;
-  color: #333;
-  display: flex;
-  align-items: center;
-}
-
-.hand-title .hand-tip {
-  font-size: 0.8rem;
-  color: #0078ff;
-  font-style: italic;
-}
-
-.tiles-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.tile {
-  width: 36px; /* 稍微减小宽度 */
-  height: 54px; /* 保持宽高比 */
+/* 明牌区域当没有明牌时的显示效果 */
+.my-revealed-tiles .tiles-container:empty {
+  min-height: 60px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-  font-size: 0.9rem; /* 减小字体大小 */
+  color: #777;
+  font-style: italic;
 }
 
-.tile:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.my-revealed-tiles .tiles-container:empty:after {
+  content: "暂无明牌";
 }
 
-.tile.selected {
-  border: 2px solid #4caf50;
-  background-color: #e8f5e9;
+/* 拖拽到明牌区的提示 */
+.my-revealed-tiles .drag-area-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #4a6fa5;
+  font-size: 0.9rem;
+  pointer-events: none; /* 不影响拖拽操作 */
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(240, 247, 255, 0.8);
+  border-radius: 5px;
+  width: 80%;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
 }
 
-/* 拖拽相关样式 */
+.my-revealed-tiles.revealed-drag-over .drag-area-hint {
+  opacity: 0.8;
+}
+
+/* 调整手牌区域，使其更明显与明牌区分开 */
+.my-hand-tiles {
+  padding: 0.75rem;
+  background-color: #fff8e1; /* 米黄色背景 */
+  border-radius: 8px;
+  border: 1px solid #ffe082;
+  transition: all 0.2s ease-in-out;
+}
+
+.my-hand-tiles.hand-drag-over {
+  background-color: #ffecb3;
+  border-color: #ffb74d;
+  box-shadow: 0 0 8px rgba(255, 183, 77, 0.3);
+}
+
+/* 拖拽操作的公共样式 */
 .tile[draggable="true"] {
   cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tile[draggable="true"]:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 .tile[draggable="true"]:active {
@@ -510,31 +511,16 @@
 }
 
 .tile.dragging {
-  opacity: 0.5;
+  opacity: 0.6;
   transform: scale(1.05);
-  z-index: 100;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
-.tile.drag-over {
-  background-color: #e8f4ff;
-  box-shadow: 0 0 5px rgba(0, 120, 255, 0.5);
-  border: 2px dashed #0078ff;
-}
-
-.tile.hidden {
-  background-color: #2196f3;
-  color: white;
-}
-
-.tile.revealed {
-  background-color: #e8f5e9;
-}
-
-/* 用户自己的明牌样式 */
+/* 调整明牌的样式使其与手牌不同 */
 .tile.my-revealed {
-  background-color: #ffecb3; /* 淡黄色背景 */
-  border: 1px solid #ffa000; /* 橙色边框 */
-  color: #e65100; /* 深橙色文字 */
+  background-color: #dcedc8; /* 浅绿色背景 */
+  border-color: #aed581;
+  color: #33691e;
 }
 
 /* 操作按钮区域 */
@@ -845,4 +831,72 @@
   border-color: #0078ff;
   color: #0078ff;
   font-weight: bold;
+}
+
+.hand-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #eee;
+}
+
+.hand-title .hand-label {
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+}
+
+.hand-title .hand-tip {
+  font-size: 0.8rem;
+  color: #0078ff;
+  font-style: italic;
+}
+
+.tiles-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tile {
+  width: 36px;
+  height: 54px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.tile:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.tile.selected {
+  border: 2px solid #4caf50;
+  background-color: #e8f5e9;
+}
+
+.tile.drag-over {
+  background-color: #e8f4ff;
+  box-shadow: 0 0 5px rgba(0, 120, 255, 0.5);
+  border: 2px dashed #0078ff;
+}
+
+.tile.hidden {
+  background-color: #2196f3;
+  color: white;
+}
+
+.tile.revealed {
+  background-color: #e8f5e9;
 } 

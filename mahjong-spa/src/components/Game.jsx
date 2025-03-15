@@ -857,31 +857,81 @@ const Game = () => {
         </div>
         
         {/* 我的明牌区域 */}
-        {myRevealedTiles.length > 0 && (
-          <div className="my-revealed-tiles">
-            <div className="hand-title">
-              <span className="hand-label">我的明牌</span>
-            </div>
-            <div className="tiles-container">
-              {myRevealedTiles.map((tile, index) => (
-                <div 
-                  key={`revealed-${tile.id}`} 
-                  className={`tile my-revealed ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
-                  onClick={() => handleTileSelect(tile)}
-                >
-                  {getTileDisplayName(tile)}
-                </div>
-              ))}
-            </div>
+        <div 
+          className="my-revealed-tiles"
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (dragSource === 'hand') {
+              e.currentTarget.classList.add('revealed-drag-over');
+            }
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('revealed-drag-over');
+          }}
+          onDrop={async (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('revealed-drag-over');
+            // 如果是从手牌区拖来的牌，进行明牌操作
+            if (dragSource === 'hand' && draggedTile) {
+              try {
+                console.log('准备明牌:', draggedTile);
+                if (!draggedTile.id) {
+                  console.error('拖拽的牌没有ID属性:', draggedTile);
+                  return;
+                }
+                await revealTiles(roomId, [draggedTile]);
+                setDraggedTile(null);
+                setDragSource(null);
+              } catch (error) {
+                console.error('明牌失败:', error);
+              }
+            }
+          }}
+        >
+          <div className="hand-title">
+            <span className="hand-label">我的明牌</span>
           </div>
-        )}
+          <div className="drag-area-hint">
+            将手牌拖到此区域明牌
+          </div>
+          <div className="tiles-container">
+            {myRevealedTiles.map((tile, index) => (
+              <div 
+                key={`revealed-${tile.id}`} 
+                className={`tile my-revealed ${selectedTiles.some(t => t.id === tile.id) ? 'selected' : ''}`}
+                onClick={() => handleTileSelect(tile)}
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', JSON.stringify(tile));
+                  setDraggedTile(tile);
+                  setDragSource('revealed');
+                  setTimeout(() => {
+                    e.target.classList.add('dragging');
+                  }, 0);
+                }}
+                onDragEnd={(e) => {
+                  e.target.classList.remove('dragging');
+                  setTimeout(() => {
+                    if (draggedTile) {
+                      setDraggedTile(null);
+                      setDragSource(null);
+                    }
+                  }, 300);
+                }}
+              >
+                {getTileDisplayName(tile)}
+              </div>
+            ))}
+          </div>
+        </div>
         
         {/* 我的手牌区域 */}
         <div 
           className="my-hand-tiles"
           onDragOver={(e) => {
             e.preventDefault();
-            if (dragSource === 'discard') {
+            if (dragSource === 'discard' || dragSource === 'revealed') {
               e.currentTarget.classList.add('hand-drag-over');
             }
           }}
@@ -892,6 +942,7 @@ const Game = () => {
           onDrop={async (e) => {
             e.preventDefault();
             e.currentTarget.classList.remove('hand-drag-over');
+            
             // 如果是从弃牌区拖来的牌，进行拿牌操作
             if (dragSource === 'discard' && draggedTile) {
               try {
@@ -905,6 +956,22 @@ const Game = () => {
                 setDragSource(null);
               } catch (error) {
                 console.error('拿牌失败:', error);
+              }
+            }
+            
+            // 如果是从明牌区拖来的牌，进行暗牌操作
+            if (dragSource === 'revealed' && draggedTile) {
+              try {
+                console.log('准备暗牌:', draggedTile);
+                if (!draggedTile.id) {
+                  console.error('拖拽的牌没有ID属性:', draggedTile);
+                  return;
+                }
+                await hideTiles(roomId, [draggedTile]);
+                setDraggedTile(null);
+                setDragSource(null);
+              } catch (error) {
+                console.error('暗牌失败:', error);
               }
             }
           }}
