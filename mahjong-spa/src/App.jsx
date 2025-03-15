@@ -21,7 +21,14 @@ function App() {
   }, [initialize]);
 
   if (loading) {
-    return <div className="loading">加载中...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p>正在加载麻将对战系统...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
