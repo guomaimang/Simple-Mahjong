@@ -130,7 +130,7 @@ export const useGameStore = create((set, get) => ({
     });
 
     // 监听游戏结束
-    websocketService.addListener('GAME_ENDED', (data) => {
+    websocketService.addListener('GAME_END', (data) => {
       if (data.roomId === roomId) {
         set({
           gameState: {
@@ -163,7 +163,7 @@ export const useGameStore = create((set, get) => ({
     websocketService.removeListener('GAME_STATE');
     websocketService.removeListener('ACTION');
     websocketService.removeListener('WIN_CLAIM');
-    websocketService.removeListener('GAME_ENDED');
+    websocketService.removeListener('GAME_END');
     websocketService.removeListener('ERROR');
     
     // 清除所有一次性监听器

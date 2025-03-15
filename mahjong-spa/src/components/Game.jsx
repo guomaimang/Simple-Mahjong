@@ -10,7 +10,7 @@ const Game = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { currentRoom, players, fetchRoom } = useRoomStore();
+  const { currentRoom, players, fetchRoom, startGame } = useRoomStore();
   const { 
     gameState, 
     playerHand, 
@@ -255,7 +255,42 @@ const Game = () => {
 
   // 处理返回首页（房间列表）
   const handleBackToHome = () => {
+    removeListeners();
+    resetGameState();
     navigate('/rooms');
+  };
+
+  // 处理开始新一局游戏
+  const handleStartNewGame = async () => {
+    try {
+      // 移除当前游戏状态监听器并重置游戏状态
+      removeListeners();
+      resetGameState();
+      
+      // 确保当前仍在房间中
+      await fetchRoom(roomId);
+      
+      // 调用开始游戏API
+      const success = await startGame(roomId);
+      if (success) {
+        // 通过WebSocket发送开始游戏消息
+        await websocketService.startGame(roomId);
+        
+        // 重新初始化游戏监听器
+        initializeListeners(roomId);
+        
+        // 短暂延迟后获取新游戏状态
+        setTimeout(async () => {
+          try {
+            await fetchGameState(roomId);
+          } catch (error) {
+            console.error('Failed to fetch new game state:', error);
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Failed to start new game:', error);
+    }
   };
 
   // 获取玩家位置
@@ -731,6 +766,11 @@ const Game = () => {
       }
     }
 
+    // 检查当前用户是否是房主
+    const isCreator = currentRoom && currentRoom.creatorEmail === user.email;
+    // 确定下一局的庄家
+    const nextDealer = gameState.winnerEmail ? getPlayerDisplayName(gameState.winnerEmail) : getPlayerDisplayName(currentRoom?.creatorEmail);
+
     return (
       <div className="game-end-overlay">
         <div className="game-end-modal">
@@ -744,9 +784,27 @@ const Game = () => {
           ) : (
             <p>游戏平局</p>
           )}
-          <button onClick={handleBackToHome}>
-            返回首页
-          </button>
+          
+          <p className="next-dealer-info">
+            下一局庄家: {nextDealer}
+          </p>
+          
+          <div className="game-end-actions">
+            {isCreator && (
+              <button 
+                className="start-new-game-button"
+                onClick={handleStartNewGame}
+              >
+                开始新一局
+              </button>
+            )}
+            <button 
+              className="back-button" 
+              onClick={handleBackToHome}
+            >
+              返回首页
+            </button>
+          </div>
         </div>
       </div>
     );
