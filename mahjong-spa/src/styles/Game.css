@@ -225,6 +225,9 @@
   padding: 0.5rem;
   background-color: #f5f5f5;
   border-radius: 8px;
+  max-height: 250px;
+  display: flex;
+  flex-direction: column;
 }
 
 .recent-actions h3 {
@@ -234,7 +237,7 @@
 }
 
 .actions-list {
-  max-height: 150px;
+  max-height: calc(100% - 30px);
   overflow-y: auto;
 }
 
@@ -409,6 +412,7 @@
 
 .action-selection {
   display: flex;
+  justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
@@ -419,7 +423,11 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   cursor: pointer;
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .action-selection button:hover {

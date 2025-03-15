@@ -419,12 +419,7 @@ const Game = () => {
     return (
       <div className="table-center">
         <div className="draw-pile">
-          <div className="pile-info">
-            <span>牌库剩余: {drawPileCount}</span>
-            <div className="draw-buttons">
-              <button onClick={handleDrawTiles}>抽1张</button>
-            </div>
-          </div>
+          {/* 这里不再显示牌库剩余和抽牌按钮 */}
         </div>
         
         <div className="discard-pile">
@@ -515,6 +510,9 @@ const Game = () => {
             onClick={() => handleActionClick('reveal')}
           >
             明牌
+          </button>
+          <button onClick={handleDrawTiles}>
+            抽牌(余{drawPileCount}张)
           </button>
           <button onClick={handleClaimWin}>
             宣布胜利
