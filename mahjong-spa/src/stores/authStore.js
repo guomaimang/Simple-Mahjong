@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authApi } from '../services/api';
+import { currentUser } from '../services/mockData';
 
 // 创建认证状态存储
 export const useAuthStore = create((set, get) => ({
@@ -13,6 +14,16 @@ export const useAuthStore = create((set, get) => ({
   initialize: async () => {
     set({ loading: true, error: null });
     try {
+      // 在演示版中，直接使用mock数据中的当前用户
+      set({ 
+        user: currentUser,
+        isAuthenticated: true,
+        isInitialized: true,
+        loading: false,
+      });
+      
+      // 原始检查令牌的代码已注释（保留参考）
+      /*
       // 检查URL中是否有token参数（GitHub OAuth回调）
       const urlParams = new URLSearchParams(window.location.search);
       const tokenFromUrl = urlParams.get('token');
@@ -40,12 +51,12 @@ export const useAuthStore = create((set, get) => ({
           loading: false,
         });
       }
+      */
     } catch (error) {
       console.error('Auth initialization error:', error);
-      localStorage.removeItem('auth_token');
       set({ 
-        user: null, 
-        isAuthenticated: false,
+        user: currentUser, // 在演示版中，即使有错误也使用mock用户
+        isAuthenticated: true,
         isInitialized: true,
         loading: false,
         error: error.message,
@@ -57,6 +68,16 @@ export const useAuthStore = create((set, get) => ({
   loginWithGithub: async () => {
     set({ loading: true, error: null });
     try {
+      // 在演示版中，不需要真正连接GitHub，直接设置当前用户
+      set({
+        user: currentUser,
+        isAuthenticated: true,
+        loading: false,
+      });
+      return true;
+      
+      // 原始GitHub登录代码已注释（保留参考）
+      /*
       const response = await authApi.getGithubLoginUrl();
       if (response && response.url) {
         // 重定向到GitHub授权页面
@@ -65,6 +86,7 @@ export const useAuthStore = create((set, get) => ({
       }
       set({ loading: false, error: "无法获取GitHub登录URL" });
       return false;
+      */
     } catch (error) {
       set({ 
         loading: false, 
@@ -76,12 +98,22 @@ export const useAuthStore = create((set, get) => ({
 
   // 用户登出
   logout: () => {
+    // 在演示版中，登出后也直接重新设置为已登录状态
+    set({ 
+      user: currentUser,
+      isAuthenticated: true,
+      loading: false,
+    });
+    
+    // 原始登出代码已注释（保留参考）
+    /*
     localStorage.removeItem('auth_token');
     set({ 
       user: null, 
       isAuthenticated: false,
       loading: false,
     });
+    */
   },
 
   // 更新昵称

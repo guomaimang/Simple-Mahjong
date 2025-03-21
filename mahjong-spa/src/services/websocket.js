@@ -1,332 +1,265 @@
-// WebSocket服务配置
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws/game';
+// 从mock服务导入
+import { mockWebsocketService } from './mockApi';
 
+// 直接导出mock服务实例
+export default mockWebsocketService;
+
+// 以下是原始WebSocket实现的注释版本，保留以便将来恢复
+/*
+// WebSocket配置
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
+
+// WebSocket服务
 class WebSocketService {
   constructor() {
     this.socket = null;
+    this.connected = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    this.reconnectTimeout = null;
-    this.listeners = new Map();
+    this.reconnectDelay = 1000;
+    this.listeners = {};
     this.connectionPromise = null;
-    this.isConnecting = false;
+    this.keepAliveInterval = null;
+    this.connectionQueue = [];
+    this.processingQueue = false;
   }
 
-  // 检查WebSocket是否已连接
-  isConnected() {
-    return this.socket && this.socket.readyState === WebSocket.OPEN;
-  }
-
-  // 连接WebSocket
+  // 初始化WebSocket连接
   connect() {
-    // 如果已经连接或正在连接，返回现有Promise
-    if (this.isConnected()) {
-      console.log('WebSocket already connected');
-      return Promise.resolve(this.socket);
-    }
-
-    if (this.isConnecting && this.connectionPromise) {
-      console.log('WebSocket connection in progress');
+    // 如果已连接或正在连接，返回现有的Promise
+    if (this.connectionPromise) {
       return this.connectionPromise;
     }
 
-    console.log('Initiating new WebSocket connection');
-    this.isConnecting = true;
     this.connectionPromise = new Promise((resolve, reject) => {
       try {
+        // 获取token
         const token = localStorage.getItem('auth_token');
         if (!token) {
-          this.isConnecting = false;
-          reject(new Error('No authentication token found'));
-          return;
+          this.connectionPromise = null;
+          return reject(new Error('未找到认证令牌'));
         }
 
-        // 清理旧连接
-        if (this.socket) {
-          try {
+        // 创建WebSocket连接
+        const wsUrl = `${WS_URL}?token=${token}`;
+        console.log(`Connecting to WebSocket at ${wsUrl}`);
+        this.socket = new WebSocket(wsUrl);
+
+        // 设置连接超时
+        const connectionTimeout = setTimeout(() => {
+          if (!this.connected) {
             this.socket.close();
-          } catch (err) {
-            console.warn('Error closing existing socket:', err);
+            this.connectionPromise = null;
+            reject(new Error('WebSocket连接超时'));
           }
-        }
+        }, 10000);
 
-        // 添加CONNECTED消息类型的监听器
-        if (!this.listeners.has('CONNECTED')) {
-          this.addListener('CONNECTED', (data) => {
-            console.log('Received CONNECTED message:', data);
-            
-            // 如果当前在游戏中，且URL包含房间ID，自动重新获取游戏状态
-            const path = window.location.pathname;
-            const match = path.match(/\/rooms\/(\d+)\/game/);
-            if (match && match[1]) {
-              const roomId = match[1];
-              console.log('Automatically requesting game state for room:', roomId);
-              setTimeout(() => this.getGameState(roomId), 500);
-            }
-          });
-        }
-
-        console.log('Creating new WebSocket connection');
-        this.socket = new WebSocket(`${WS_URL}?token=${token}`);
-
+        // 连接成功
         this.socket.onopen = () => {
-          console.log('WebSocket connected');
+          console.log('WebSocket连接成功');
+          clearTimeout(connectionTimeout);
+          this.connected = true;
           this.reconnectAttempts = 0;
-          this.isConnecting = false;
-          resolve(this.socket);
+          this.connectionPromise = null;
+          this.setupKeepAlive();
+          this.processQueue();
+          resolve(true);
         };
 
-        this.socket.onclose = (event) => {
-          console.log('WebSocket disconnected:', event.code, event.reason);
-          this.isConnecting = false;
-          this.socket = null;
-          
-          // 尝试重新连接
-          if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            const timeout = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-            console.log(`Attempting to reconnect in ${timeout}ms...`);
-            
-            this.reconnectTimeout = setTimeout(() => {
-              this.reconnectAttempts++;
-              this.connect().catch(err => console.error('Reconnection failed:', err));
-            }, timeout);
-          }
-        };
-
-        this.socket.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          this.isConnecting = false;
-          reject(error);
-        };
-
+        // 接收消息
         this.socket.onmessage = (event) => {
           try {
-            console.log(`Received WebSocket message: ${event.data}`);
-            const message = JSON.parse(event.data);
-            const { type, data } = message;
-            
-            console.log(`Processing message of type: ${type}, data:`, data);
-            
-            // 对WIN_CLAIM消息进行特殊处理
-            if (type === 'WIN_CLAIM') {
-              console.log('收到胜利声明消息，详细数据:', JSON.stringify(data));
-              // 检查牌数据
-              const gameData = data.gameData || {};
-              console.log('WIN_CLAIM gameData:', gameData);
-              
-              if (gameData.handTiles) {
-                console.log('手牌数据:', gameData.handTiles);
-                console.log('手牌数量:', gameData.handTiles.length);
-                if (gameData.handTiles.length > 0) {
-                  console.log('第一张手牌:', gameData.handTiles[0]);
-                }
-              } else {
-                console.log('无手牌数据');
-              }
-              
-              if (gameData.revealedTiles) {
-                console.log('明牌数据:', gameData.revealedTiles);
-                console.log('明牌数量:', gameData.revealedTiles.length);
-                if (gameData.revealedTiles.length > 0) {
-                  console.log('第一张明牌:', gameData.revealedTiles[0]);
-                }
-              } else {
-                console.log('无明牌数据');
-              }
+            const data = JSON.parse(event.data);
+            console.log('Received WebSocket message:', data);
+          
+            // 处理服务器响应
+            if (data.type && this.listeners[data.type]) {
+              this.listeners[data.type].forEach(callback => callback(data.payload));
             }
-            
-            // 对GAME_STATE消息进行特殊处理
-            if (type === 'GAME_STATE') {
-              console.log(`Received GAME_STATE message with data:`, data);
-              if (!data || (!data.gameState && !data.status)) {
-                console.error('Received empty or invalid game state:', data);
-              }
-              
-              // 检查胜利相关字段
-              if (data.pendingWinner) {
-                console.log('游戏状态包含pendingWinner字段:', data.pendingWinner);
-              }
-              
-              if (data.winConfirmations) {
-                console.log('游戏状态包含winConfirmations字段:', data.winConfirmations);
-              }
-            }
-            
-            // 处理错误消息的特殊处理
-            if (type === 'ERROR' && !this.listeners.has(type)) {
-              console.warn(`No listeners registered for ERROR message:`, data);
-              // 自动注册一个默认的错误监听器以显示错误
-              this.addDefaultErrorListener();
-            }
-            
-            // 调用相应的监听器处理消息
-            if (this.listeners.has(type)) {
-              console.log(`Found ${this.listeners.get(type).length} listeners for type: ${type}`);
-              // 为所有消息类型创建一个监听器的副本，以避免在回调中修改数组时出现问题
-              const listeners = [...this.listeners.get(type)];
-              console.log(`Calling ${listeners.length} listeners for ${type}`);
-              
-              listeners.forEach(callback => {
-                try {
-                  console.log(`Executing listener for ${type}`);
-                  callback(data);
-                } catch (err) {
-                  console.error(`Error in ${type} listener:`, err);
-                }
-              });
-            } else {
-              console.log(`No listeners found for message type: ${type}`);
-            }
-            
-            // 处理系统消息
-            if (type === 'SYSTEM_NOTIFICATION') {
-              console.log('System notification:', data.message);
-            }
-          } catch (err) {
-            console.error('Error parsing WebSocket message:', err, event.data);
+          } catch (error) {
+            console.error('处理WebSocket消息时出错:', error);
           }
         };
-      } catch (err) {
-        this.isConnecting = false;
-        reject(err);
+
+        // 连接错误
+        this.socket.onerror = (error) => {
+          console.error('WebSocket连接错误:', error);
+          clearTimeout(connectionTimeout);
+          if (!this.connected) {
+            this.connectionPromise = null;
+          reject(error);
+          }
+        };
+
+        // 连接关闭
+        this.socket.onclose = (event) => {
+          console.log(`WebSocket连接关闭: ${event.code} ${event.reason}`);
+          clearTimeout(connectionTimeout);
+          this.connected = false;
+          clearInterval(this.keepAliveInterval);
+            
+          // 尝试重新连接
+          if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+            console.log(`${this.reconnectAttempts}秒后尝试重新连接...`);
+            setTimeout(() => this.reconnect(), delay);
+              } else {
+            this.connectionPromise = null;
+            console.error('WebSocket重连失败，达到最大重试次数');
+          }
+        };
+      } catch (error) {
+        console.error('初始化WebSocket时出错:', error);
+        this.connectionPromise = null;
+        reject(error);
       }
     });
 
     return this.connectionPromise;
   }
 
-  // 断开WebSocket连接
-  disconnect() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
+  // 重新连接
+  reconnect() {
+    console.log('尝试重新连接WebSocket...');
+    this.disconnect();
+    return this.connect();
+  }
 
+  // 断开连接
+  disconnect() {
     if (this.socket) {
+      this.connected = false;
+      clearInterval(this.keepAliveInterval);
       this.socket.close();
       this.socket = null;
     }
-
-    this.isConnecting = false;
-    this.connectionPromise = null;
   }
 
-  // 向服务器发送消息
-  async send(type, data) {
-    try {
-      const socket = await this.connect();
-      if (socket.readyState === WebSocket.OPEN) {
-        const message = JSON.stringify({ type, data });
-        console.log(`Sending WebSocket message: ${message}`);
-        socket.send(message);
-      } else {
-        console.error(`WebSocket not open. Current state: ${socket.readyState}`);
+  // 设置保持连接的心跳
+  setupKeepAlive() {
+    clearInterval(this.keepAliveInterval);
+    this.keepAliveInterval = setInterval(() => {
+      if (this.connected) {
+        this.sendMessage('PING', {});
+      }
+    }, 30000);
+  }
+
+  // 添加消息监听器
+  addListener(event, callback) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+    
+    // 返回一个清理函数，用于移除监听器
+    return () => this.removeListener(event, callback);
+  }
+
+  // 移除消息监听器
+  removeListener(event, callback) {
+    if (!this.listeners[event]) return;
+    this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+  }
+
+  // 发送消息
+  async sendMessage(type, payload) {
+    // 如果未连接，则将消息加入队列
+    if (!this.connected) {
+      return new Promise((resolve, reject) => {
+        this.connectionQueue.push({
+          type,
+          payload,
+          resolve,
+          reject
+        });
         
-        // 如果WebSocket未打开，尝试重新连接然后再发送
-        console.log('Attempting to reconnect...');
-        await this.disconnect();
-        const newSocket = await this.connect();
+        // 尝试连接并处理队列
+        this.connect()
+          .catch(error => {
+            // 处理连接失败的情况
+            this.connectionQueue.forEach(item => item.reject(error));
+            this.connectionQueue = [];
+          });
+      });
+    }
+    
+    // 如果已连接，直接发送消息
+    return new Promise((resolve, reject) => {
+      try {
+        const message = JSON.stringify({
+          type,
+          payload
+        });
         
-        if (newSocket.readyState === WebSocket.OPEN) {
-          const message = JSON.stringify({ type, data });
-          console.log(`Resending WebSocket message after reconnection: ${message}`);
-          newSocket.send(message);
+        this.socket.send(message);
+        resolve(true);
+      } catch (error) {
+        console.error('发送WebSocket消息时出错:', error);
+        reject(error);
+    }
+    });
+  }
+
+  // 处理队列中的消息
+  async processQueue() {
+    if (this.processingQueue || this.connectionQueue.length === 0) return;
+    
+    this.processingQueue = true;
+    
+    while (this.connectionQueue.length > 0) {
+      const { type, payload, resolve, reject } = this.connectionQueue.shift();
+      
+      try {
+        if (this.connected) {
+          await this.sendMessage(type, payload)
+            .then(resolve)
+            .catch(reject);
         } else {
-          throw new Error('WebSocket reconnection failed');
+          reject(new Error('WebSocket未连接'));
+  }
+      } catch (error) {
+        reject(error);
+  }
+    }
+    
+    this.processingQueue = false;
+  }
+
+  // 获取游戏状态
+  async fetchGameState(roomId) {
+    if (!this.connected) {
+      await this.connect();
+  }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.removeListener('GAME_STATE', onGameState);
+        reject(new Error('获取游戏状态超时'));
+      }, 5000);
+      
+      const onGameState = (data) => {
+        if (data.roomId === roomId || data.gameState?.roomId === roomId) {
+          clearTimeout(timeout);
+          this.removeListener('GAME_STATE', onGameState);
+          resolve(data);
         }
-      }
-    } catch (err) {
-      console.error('Failed to send message:', err);
-      throw err;
-    }
-  }
-
-  // 添加消息类型的监听器
-  addListener(type, callback) {
-    console.log(`Adding listener for message type: ${type}`);
-    if (!this.listeners.has(type)) {
-      this.listeners.set(type, []);
-    }
-    this.listeners.get(type).push(callback);
-  }
-
-  // 移除消息类型的监听器
-  removeListener(type, callback) {
-    if (this.listeners.has(type)) {
-      const listeners = this.listeners.get(type);
-      const index = listeners.indexOf(callback);
-      if (index !== -1) {
-        listeners.splice(index, 1);
-      }
-    }
-  }
-
-  // 房间相关WebSocket方法
-  joinRoom(roomId) {
-    return this.send('JOIN_ROOM', { roomId });
-  }
-
-  leaveRoom(roomId) {
-    return this.send('LEAVE_ROOM', { roomId });
-  }
-
-  startGame(roomId) {
-    return this.send('START_GAME', { roomId });
-  }
-
-  // 游戏相关WebSocket方法
-  drawTile(roomId) {
-    // 只能抽一张牌
-    return this.send('DRAW_TILE', { roomId });
-  }
-
-  discardTile(roomId, tile) {
-    return this.send('DISCARD_TILE', { roomId, tile });
-  }
-
-  takeTile(roomId, tile) {
-    // 从tile对象中提取id
-    return this.send('TAKE_TILE', { roomId, tileId: tile.id });
-  }
-
-  revealTiles(roomId, tiles) {
-    // 从每个tile对象中提取id，支持多张牌明牌
-    const tileIds = tiles.map(tile => tile.id);
-    return this.send('REVEAL_TILES', { roomId, tileIds });
-  }
-
-  hideTiles(roomId, tiles) {
-    // 从每个tile对象中提取id，支持多张牌暗牌
-    const tileIds = tiles.map(tile => tile.id);
-    return this.send('HIDE_TILES', { roomId, tileIds });
-  }
-
-  claimWin(roomId) {
-    return this.send('CLAIM_WIN', { roomId });
-  }
-
-  confirmWin(roomId, winnerEmail, confirm) {
-    return this.send('CONFIRM_WIN', { roomId, winnerEmail, confirm });
-  }
-
-  getGameState(roomId) {
-    console.log(`Requesting game state for room: ${roomId}`);
-    // 添加一个随机标识符，用于调试
-    const requestId = Math.floor(Math.random() * 1000000);
-    console.log(`Game state request ID: ${requestId}`);
-    return this.send('GET_GAME_STATE', { roomId, requestId });
-  }
-
-  // 添加默认的错误消息监听器
-  addDefaultErrorListener() {
-    console.log('Adding default ERROR listener');
-    this.addListener('ERROR', (data) => {
-      console.warn(`Default error handler: ${data.code} - ${data.message}`);
-      // 这里可以添加全局错误处理逻辑，如显示toast提示等
+      };
+      
+      this.addListener('GAME_STATE', onGameState);
+      this.sendMessage('GET_GAME_STATE', { roomId })
+        .catch(error => {
+          clearTimeout(timeout);
+          this.removeListener('GAME_STATE', onGameState);
+          reject(error);
+        });
     });
   }
 }
 
-// 创建单例实例
+// 创建WebSocket服务实例
 const websocketService = new WebSocketService();
+
 export default websocketService; 
+*/ 

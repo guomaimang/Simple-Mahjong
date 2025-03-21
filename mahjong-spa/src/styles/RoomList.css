@@ -2,6 +2,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  font-family: 'Arial', sans-serif;
 }
 
 .room-list-header {
@@ -10,7 +11,8 @@
   align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #eaeaea;
+  position: relative;
 }
 
 .room-list-header h1 {
@@ -29,15 +31,16 @@
 }
 
 .user-info button {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
   background-color: #f5f5f5;
   border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .user-info button:hover {
-  background-color: #e0e0e0;
+  background-color: #e9e9e9;
 }
 
 .room-actions {
@@ -52,13 +55,14 @@
 }
 
 .create-room-button {
-  padding: 0.75rem 1.5rem;
   background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .create-room-button:hover {
@@ -66,26 +70,27 @@
 }
 
 .create-room-button:disabled {
-  background-color: #9e9e9e;
+  background-color: #a5d6a7;
   cursor: not-allowed;
 }
 
 .refresh-button {
-  padding: 0.75rem 1.5rem;
-  background-color: #4a6cb8;
+  background-color: #2196f3;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .refresh-button:hover {
-  background-color: #3d5a9e;
+  background-color: #1e88e5;
 }
 
 .refresh-button:disabled {
-  background-color: #9e9e9e;
+  background-color: #90caf9;
   cursor: not-allowed;
 }
 
@@ -102,17 +107,27 @@
 }
 
 .join-room-form button {
-  padding: 0.75rem 1.5rem;
-  background-color: #2196f3;
+  background-color: #ff9800;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
+  padding: 0 1.5rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .join-room-form button:hover {
-  background-color: #1e88e5;
+  background-color: #f57c00;
+}
+
+.error-message {
+  color: #f44336;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(244, 67, 54, 0.1);
+  border-radius: 4px;
+  border-left: 4px solid #f44336;
 }
 
 .room-list h2 {
@@ -137,9 +152,11 @@
 .rooms-table {
   width: 100%;
   border-collapse: collapse;
+  margin-bottom: 2rem;
 }
 
-.rooms-table th, .rooms-table td {
+.rooms-table th,
+.rooms-table td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
@@ -156,37 +173,50 @@
 }
 
 .rooms-table button {
-  padding: 0.5rem 1rem;
-  background-color: #2196f3;
+  background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
+  padding: 0.5rem 1rem;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .rooms-table button:hover {
-  background-color: #1e88e5;
+  background-color: #43a047;
 }
 
 .rooms-table button:disabled {
-  background-color: #9e9e9e;
+  background-color: #a5d6a7;
   cursor: not-allowed;
 }
 
-.error-message {
-  color: #e53935;
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background-color: #ffebee;
-  border-radius: 4px;
-}
-
 .resume-button {
-  color: #4caf50 !important;
-  background-color: white !important;
-  border: 1px solid #4caf50 !important;
+  background-color: #ff9800 !important;
 }
 
 .resume-button:hover {
-  background-color: #f0fff0 !important;
+  background-color: #f57c00 !important;
+}
+
+/* 演示版标记 */
+.demo-badge {
+  position: absolute;
+  top: -12px;
+  right: 0;
+  background-color: #ff5722;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.demo-footer {
+  margin-top: 2rem;
+  text-align: center;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  color: #666;
 } 

@@ -22,7 +22,7 @@ const RoomList = () => {
   const handleCreateRoom = async () => {
     const room = await createRoom();
     if (room) {
-      navigate(`/rooms/${room.roomId}`);
+      navigate(`/rooms/${room.id}`);
     }
   };
 
@@ -59,8 +59,9 @@ const RoomList = () => {
     <div className="room-list-container">
       <header className="room-list-header">
         <h1>麻将对战系统</h1>
+        <div className="demo-badge">演示版</div>
         <div className="user-info">
-          <span>欢迎，{user?.nickname || user?.email}</span>
+          <span>欢迎，{user?.nickname || user?.name || user?.email}</span>
           <button onClick={() => setIsNicknameModalOpen(true)}>修改昵称</button>
           <button onClick={logout}>退出登录</button>
         </div>
@@ -116,6 +117,7 @@ const RoomList = () => {
             <thead>
               <tr>
                 <th>房间号</th>
+                <th>房间名</th>
                 <th>创建者</th>
                 <th>玩家数</th>
                 <th>状态</th>
@@ -126,23 +128,24 @@ const RoomList = () => {
             </thead>
             <tbody>
               {rooms.map((room) => (
-                <tr key={room.roomId}>
-                  <td>{room.roomId}</td>
-                  <td>{room.creatorEmail}</td>
-                  <td>{room.playerEmails.length}/4</td>
+                <tr key={room.id}>
+                  <td>{room.id}</td>
+                  <td>{room.name}</td>
+                  <td>{room.createdBy}</td>
+                  <td>{room.playerCount}/{room.maxPlayers}</td>
                   <td>
-                    {room.status === 'WAITING' ? '等待中' : 
-                     room.status === 'PLAYING' ? '游戏中' : '已结束'}
+                    {room.status === 'waiting' ? '等待中' : 
+                     room.status === 'playing' ? '游戏中' : '已结束'}
                   </td>
-                  <td>{formatTime(room.creationTime)}</td>
-                  <td>{calculateTimeLeft(room.creationTime)}</td>
+                  <td>{formatTime(room.createdAt)}</td>
+                  <td>{calculateTimeLeft(room.createdAt)}</td>
                   <td>
                     <button 
-                      onClick={() => navigate(`/rooms/${room.roomId}`)}
-                      disabled={room.status === 'FINISHED'}
-                      className={room.status === 'PLAYING' ? 'resume-button' : ''}
+                      onClick={() => navigate(`/rooms/${room.id}`)}
+                      disabled={room.status === 'finished'}
+                      className={room.status === 'playing' ? 'resume-button' : ''}
                     >
-                      {room.status === 'PLAYING' ? '恢复' : '进入'}
+                      {room.status === 'playing' ? '查看' : '进入'}
                     </button>
                   </td>
                 </tr>
@@ -152,10 +155,16 @@ const RoomList = () => {
         )}
       </div>
 
-      <NicknameModal 
-        isOpen={isNicknameModalOpen} 
-        onClose={() => setIsNicknameModalOpen(false)} 
-      />
+      {isNicknameModalOpen && (
+        <NicknameModal 
+          currentNickname={user?.nickname} 
+          onClose={() => setIsNicknameModalOpen(false)} 
+        />
+      )}
+
+      <footer className="demo-footer">
+        <p>这是麻将游戏的演示版本，所有数据都在前端模拟</p>
+      </footer>
     </div>
   );
 };

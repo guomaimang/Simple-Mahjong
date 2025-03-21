@@ -1,3 +1,11 @@
+// 从mock API导入
+import { authApi, roomApi } from './mockApi';
+
+// 直接导出模拟API
+export { authApi, roomApi };
+
+// 以下是原始API实现的注释版本，保留以便将来恢复
+/*
 // API配置
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
@@ -105,4 +113,5 @@ export const roomApi = {
     });
     return handleResponse(response);
   },
-}; 
+};
+*/ 
