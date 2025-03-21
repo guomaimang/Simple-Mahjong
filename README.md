@@ -9,6 +9,8 @@
 
 Simple-Mahjong是一个简单的麻将对战平台，专注于提供基本的牌操作功能，由玩家自行判断胜负。系统不内置完整的麻将规则，给玩家提供了更多的自由度。
 
+![cover](https://github.com/guomaimang/Simple-Mahjong/blob/main/cover.png)
+
 主要特点：
 - 简单的房间创建和管理系统
 - 基于WebSocket的实时通信
