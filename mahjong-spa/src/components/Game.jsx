@@ -97,7 +97,9 @@ const Game = () => {
         }
       } catch (error) {
         console.error('Failed to initialize game:', error);
-        set({ error: `初始化游戏失败：${error.message}` });
+        // 这里使用useGameStore的setState方法，而不是直接使用set
+        // 修复：使用useGameStore的方式设置错误
+        useGameStore.setState({ error: `初始化游戏失败：${error.message}` });
       }
     };
 
@@ -382,6 +384,43 @@ const Game = () => {
     if (!tile) return '';
     
     let name = '';
+    
+    // 处理新格式（suit和value字段）
+    if (tile.suit) {
+      switch (tile.suit) {
+        case 'bamboo':
+          name = `${tile.value}条`;
+          break;
+        case 'dots':
+          name = `${tile.value}筒`;
+          break;
+        case 'characters':
+          name = `${tile.value}万`;
+          break;
+        case 'wind':
+          switch (tile.value) {
+            case 'east': name = '东风'; break;
+            case 'south': name = '南风'; break;
+            case 'west': name = '西风'; break;
+            case 'north': name = '北风'; break;
+            default: name = `${tile.value}风`;
+          }
+          break;
+        case 'dragon':
+          switch (tile.value) {
+            case 'red': name = '红中'; break;
+            case 'green': name = '发财'; break;
+            case 'white': name = '白板'; break;
+            default: name = `${tile.value}箭`;
+          }
+          break;
+        default:
+          name = `${tile.suit}${tile.value}`;
+      }
+      return name;
+    }
+    
+    // 处理旧格式（type和value字段）
     switch (tile.type) {
       case 'WAN':
         name = `${tile.value}万`;

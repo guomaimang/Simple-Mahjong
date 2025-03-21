@@ -55,6 +55,12 @@ const RoomList = () => {
     return `${hours}小时${minutes}分钟`;
   };
 
+  // 添加直接进入演示游戏的功能
+  const enterDemoGame = () => {
+    // 使用id为102的房间，这是在mockData中设置为"playing"状态的房间
+    navigate('/rooms/102/game');
+  };
+
   return (
     <div className="room-list-container">
       <header className="room-list-header">
@@ -66,6 +72,17 @@ const RoomList = () => {
           <button onClick={logout}>退出登录</button>
         </div>
       </header>
+
+      {/* 添加演示游戏入口按钮 */}
+      <div className="demo-game-entry">
+        <button 
+          className="demo-game-button" 
+          onClick={enterDemoGame}
+        >
+          直接进入演示游戏
+        </button>
+        <p>点击上方按钮直接进入一个已开始的麻将游戏</p>
+      </div>
 
       <div className="room-actions">
         <div className="room-actions-left">
@@ -140,13 +157,23 @@ const RoomList = () => {
                   <td>{formatTime(room.createdAt)}</td>
                   <td>{calculateTimeLeft(room.createdAt)}</td>
                   <td>
-                    <button 
-                      onClick={() => navigate(`/rooms/${room.id}`)}
-                      disabled={room.status === 'finished'}
-                      className={room.status === 'playing' ? 'resume-button' : ''}
-                    >
-                      {room.status === 'playing' ? '查看' : '进入'}
-                    </button>
+                    <div className="room-actions-buttons">
+                      <button 
+                        onClick={() => navigate(`/rooms/${room.id}`)}
+                        disabled={room.status === 'finished'}
+                        className={room.status === 'playing' ? 'resume-button' : ''}
+                      >
+                        {room.status === 'playing' ? '查看房间' : '进入'}
+                      </button>
+                      {room.status === 'playing' && (
+                        <button 
+                          onClick={() => navigate(`/rooms/${room.id}/game`)}
+                          className="play-button"
+                        >
+                          进入游戏
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

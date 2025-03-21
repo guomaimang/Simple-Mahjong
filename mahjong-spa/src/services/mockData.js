@@ -144,7 +144,7 @@ export const createInitialGameState = (roomId) => {
     const startIdx = index * 13;
     hands[player.email] = allTiles.slice(startIdx, startIdx + 13);
     revealedTiles[player.email] = [];
-    playerHandCounts[player.email] = 13;
+    playerHandCounts[player.email] = hands[player.email].length; // 设置为实际手牌数量
   });
   
   // 剩余的牌作为牌堆
@@ -178,7 +178,80 @@ export const createInitialGameState = (roomId) => {
 // 模拟游戏状态数据
 export const mockGameStates = {
   '101': createInitialGameState('101'),
-  '102': createInitialGameState('102'),
+  '102': (() => {
+    // 创建房间102的初始游戏状态
+    const gameState = createInitialGameState('102');
+    
+    // 如果游戏状态创建失败，返回null
+    if (!gameState) return null;
+    
+    // 添加玩家位置信息
+    gameState.playerPositions = {
+      [mockUsers[0].email]: 0, // 当前用户位置
+      [mockUsers[1].email]: 1, // 上家
+      [mockUsers[2].email]: 2, // 对家
+      [mockUsers[3].email]: 3, // 下家
+    };
+    
+    // 设置庄家
+    gameState.dealerEmail = mockUsers[0].email;
+    
+    // 添加一些历史动作
+    gameState.recentActions = [
+      {
+        type: 'DRAW',
+        playerEmail: mockUsers[0].email,
+        timestamp: new Date(Date.now() - 1000 * 60).toISOString()
+      },
+      {
+        type: 'DISCARD',
+        playerEmail: mockUsers[0].email,
+        data: createTile('bamboo', 3),
+        timestamp: new Date(Date.now() - 1000 * 50).toISOString()
+      },
+      {
+        type: 'DRAW',
+        playerEmail: mockUsers[1].email,
+        timestamp: new Date(Date.now() - 1000 * 40).toISOString()
+      },
+      {
+        type: 'DISCARD',
+        playerEmail: mockUsers[1].email,
+        data: createTile('dots', 5),
+        timestamp: new Date(Date.now() - 1000 * 30).toISOString()
+      }
+    ];
+    
+    // 加入一些弃牌
+    gameState.discardPile = [
+      createTile('bamboo', 3, 'discard-1'),
+      createTile('dots', 5, 'discard-2'),
+      createTile('characters', 7, 'discard-3'),
+      createTile('wind', 'east', 'discard-4'),
+      createTile('dragon', 'red', 'discard-5')
+    ];
+    
+    // 为玩家添加一些明牌
+    gameState.revealedTiles = {
+      [mockUsers[0].email]: [
+        createTile('bamboo', 1, 'revealed-1'),
+        createTile('bamboo', 1, 'revealed-2'),
+        createTile('bamboo', 1, 'revealed-3')
+      ],
+      [mockUsers[1].email]: [
+        createTile('dots', 9, 'revealed-4'),
+        createTile('dots', 9, 'revealed-5'),
+        createTile('dots', 9, 'revealed-6')
+      ],
+      [mockUsers[2].email]: [],
+      [mockUsers[3].email]: [
+        createTile('dragon', 'green', 'revealed-7'),
+        createTile('dragon', 'green', 'revealed-8')
+      ]
+    };
+    
+    return gameState;
+  })(),
   '103': null // 房间未开始游戏
 };
 

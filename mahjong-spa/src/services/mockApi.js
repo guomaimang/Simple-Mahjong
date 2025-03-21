@@ -172,6 +172,11 @@ export const mockWebsocketService = {
     mockWebsocketService.connected = false;
   },
   
+  // 检查是否已连接（添加的方法）
+  isConnected: () => {
+    return mockWebsocketService.connected;
+  },
+  
   // 添加监听器
   addListener: (event, callback) => {
     return globalEmitter.addListener(event, callback);

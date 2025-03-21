@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import websocketService from '../services/websocket';
+import { mockGameStates, currentUser, sortTiles } from '../services/mockData';
 
 // 创建游戏状态存储
 export const useGameStore = create((set, get) => ({
@@ -248,131 +249,150 @@ export const useGameStore = create((set, get) => ({
     });
   },
 
-  // 移除游戏状态监听
+  // 移除所有监听器
   removeListeners: () => {
     console.log('Removing listeners');
-    websocketService.removeListener('GAME_STATE');
-    websocketService.removeListener('ACTION');
-    websocketService.removeListener('WIN_CLAIM');
-    websocketService.removeListener('GAME_END');
-    websocketService.removeListener('ERROR');
     
-    // 清除所有一次性监听器
-    const oneTimeListeners = get().oneTimeListeners;
-    oneTimeListeners.forEach(listener => {
-      websocketService.removeListener('GAME_STATE', listener);
-    });
-    set({ oneTimeListeners: [] });
+    // 在模拟环境中不需要特别处理
+    if (typeof mockGameStates !== 'undefined') {
+      return;
+    }
+    
+    // 移除一次性监听器
+    const { oneTimeListeners } = get();
+    if (oneTimeListeners && oneTimeListeners.length > 0) {
+      oneTimeListeners.forEach(listener => {
+        websocketService.removeListener('GAME_STATE', listener);
+      });
+      set({ oneTimeListeners: [] });
+    }
+  },
+
+  // 将mockData中的牌格式转换为gameStore使用的格式
+  convertTileFormat: (tile) => {
+    if (!tile) return null;
+    
+    // 如果已经是type/value格式，直接返回
+    if (tile.type) return tile;
+    
+    // 将suit/value格式转换为type/value格式
+    if (tile.suit) {
+      const newTile = {
+        id: tile.id,
+      };
+      
+      // 转换suit到type
+      switch (tile.suit) {
+        case 'bamboo':
+          newTile.type = 'TIAO';
+          newTile.value = tile.value;
+          break;
+        case 'dots':
+          newTile.type = 'TONG';
+          newTile.value = tile.value;
+          break;
+        case 'characters':
+          newTile.type = 'WAN';
+          newTile.value = tile.value;
+          break;
+        case 'wind':
+          newTile.type = 'FENG';
+          // 转换风牌的值
+          switch (tile.value) {
+            case 'east': newTile.value = 1; break;
+            case 'south': newTile.value = 2; break;
+            case 'west': newTile.value = 3; break;
+            case 'north': newTile.value = 4; break;
+            default: newTile.value = 0;
+          }
+          break;
+        case 'dragon':
+          newTile.type = 'JIAN';
+          // 转换箭牌的值
+          switch (tile.value) {
+            case 'red': newTile.value = 1; break;
+            case 'green': newTile.value = 2; break;
+            case 'white': newTile.value = 3; break;
+            default: newTile.value = 0;
+          }
+          break;
+        default:
+          newTile.type = tile.suit.toUpperCase();
+          newTile.value = tile.value;
+      }
+      
+      return newTile;
+    }
+    
+    return tile;
+  },
+
+  // 转换整个牌数组的格式
+  convertTilesFormat: (tiles) => {
+    if (!Array.isArray(tiles)) return [];
+    return tiles.map(tile => get().convertTileFormat(tile));
   },
 
   // 获取游戏状态
   fetchGameState: async (roomId) => {
-    // 添加一个防抖变量避免频繁请求
-    if (get().loading) {
-      console.log('Already loading game state, skipping request');
-      return;
-    }
-    
     set({ loading: true, error: null });
-    // 添加一个尝试计数器
-    const tryCount = get().tryCount || 0;
-    
-    // 如果尝试次数过多，显示错误并停止请求
-    if (tryCount > 5) {
-      console.error('Max retry count reached, stopping game state requests');
-      set({ 
-        loading: false, 
-        error: '无法获取游戏状态，请刷新页面重试', 
-        tryCount: 0 
-      });
-      return;
-    }
     
     try {
-      // 首先检查WebSocket连接状态
-      if (!websocketService.isConnected()) {
-        console.log('WebSocket not connected, reconnecting...');
-        await websocketService.connect();
-      }
-      
-      console.log(`Attempting to fetch game state for room ${roomId}, attempt #${tryCount + 1}`);
-      await websocketService.getGameState(roomId);
-      set({ tryCount: tryCount + 1 });
-      
-      // 添加重试机制，如果3秒后仍然没有接收到游戏状态，再次尝试
-      const currentState = get().gameState;
-      
-      return new Promise((resolve) => {
-        if (currentState && currentState.roomId === roomId) {
-          // 如果已经有状态了，直接返回
-          console.log('Found existing game state, returning immediately');
-          set({ loading: false, tryCount: 0 });
-          resolve(currentState);
-        } else {
-          // 否则设置超时再次尝试
-          console.log(`Setting timeout for game state response, attempt #${tryCount + 1}`);
+      // 演示版本：直接从mockGameStates获取游戏状态
+      if (typeof mockGameStates !== 'undefined' && mockGameStates[roomId]) {
+        console.log('使用mock游戏状态数据');
+        const gameState = mockGameStates[roomId];
+        const playerEmail = currentUser.email;
+        
+        // 获取当前玩家的手牌
+        const playerHand = gameState.hands[playerEmail] || [];
+        
+        // 转换牌的格式
+        const convertedPlayerHand = get().convertTilesFormat(playerHand);
+        const sortedPlayerHand = sortTiles(convertedPlayerHand);
+        
+        // 转换弃牌堆和明牌的格式
+        const convertedDiscardPile = get().convertTilesFormat(gameState.discardPile);
+        
+        // 转换所有玩家的明牌
+        const convertedRevealedTiles = {};
+        Object.keys(gameState.revealedTiles).forEach(email => {
+          convertedRevealedTiles[email] = get().convertTilesFormat(gameState.revealedTiles[email]);
+        });
+        
+        set({
+          gameState,
+          playerHand: sortedPlayerHand,
+          revealedTiles: convertedRevealedTiles,
+          playerHandCounts: gameState.playerHandCounts,
+          discardPile: convertedDiscardPile,
+          drawPileCount: gameState.drawPileCount,
+          recentActions: gameState.recentActions,
+          loading: false,
+          error: null
+        });
+        
+        return gameState;
+      } else {
+        // 原始WebSocket方法 - 直接使用websocketService的fetchGameState
+        const gameData = await websocketService.fetchGameState(roomId);
+        
+        if (gameData) {
+          set({
+            gameState: gameData.gameState,
+            playerHand: gameData.hand || [],
+            revealedTiles: gameData.revealedTiles || {},
+            playerHandCounts: gameData.playerHandCounts || {},
+            discardPile: gameData.discardPile || [],
+            drawPileCount: gameData.drawPileCount || 0,
+            recentActions: gameData.recentActions || [],
+            loading: false,
+            error: null
+          });
           
-          const timeout = setTimeout(async () => {
-            const newState = get().gameState;
-            
-            if (!newState || newState.roomId !== roomId) {
-              console.log(`No game state received after timeout, attempt #${tryCount + 1}`);
-              
-              // 手动再次请求游戏状态，但避免无限循环
-              set({ loading: false });
-              // 重新连接WebSocket，然后尝试再次获取游戏状态
-              websocketService.disconnect();
-              setTimeout(async () => {
-                try {
-                  await websocketService.connect();
-                  
-                  // 短暂延迟后再次请求游戏状态
-                  setTimeout(() => {
-                    console.log('Retrying game state request after reconnection');
-                    websocketService.getGameState(roomId);
-                  }, 1000);
-                } catch (error) {
-                  console.error('Reconnection failed:', error);
-                }
-              }, 1000);
-            } else {
-              // 已经收到状态，重置尝试计数
-              console.log('Game state received within timeout period');
-              set({ tryCount: 0 });
-            }
-            resolve(get().gameState);
-          }, 3000);
-          
-          // 添加一次性监听器，如果收到状态更新则清除超时
-          const listener = (data) => {
-            console.log('One-time listener received data:', data);
-            
-            if (data && (data.roomId === roomId || (data.gameState && data.gameState.roomId === roomId))) {
-              console.log('Received game state via one-time listener, clearing timeout');
-              clearTimeout(timeout);
-              
-              // 保存到oneTimeListeners数组中，以便后续清理
-              const listeners = get().oneTimeListeners;
-              const updatedListeners = listeners.filter(l => l !== listener);
-              set({ oneTimeListeners: updatedListeners });
-              
-              websocketService.removeListener('GAME_STATE', listener);
-              set({ loading: false, tryCount: 0 });
-              resolve(data);
-            } else {
-              console.log('One-time listener data did not match criteria, ignoring');
-            }
-          };
-          
-          // 添加到一次性监听器列表中，以便以后清理
-          const listeners = get().oneTimeListeners;
-          listeners.push(listener);
-          set({ oneTimeListeners: listeners });
-          
-          console.log('Added one-time listener for GAME_STATE');
-          websocketService.addListener('GAME_STATE', listener);
+          return gameData.gameState;
         }
-      });
+      }
     } catch (error) {
       console.error('Error in fetchGameState:', error);
       set({ 
@@ -383,124 +403,7 @@ export const useGameStore = create((set, get) => ({
     }
   },
 
-  // 抽取牌
-  drawTile: async (roomId) => {
-    set({ loading: true, error: null });
-    try {
-      // 只能抽一张牌
-      const response = await websocketService.drawTile(roomId);
-      
-      // 等待一小段时间，确保游戏状态已更新
-      setTimeout(() => {
-        // 检查玩家手牌是否有更新
-        const { playerHand } = get();
-        // 查找刚刚抽到的牌（最后一张牌）
-        if (playerHand.length > 0) {
-          const lastTile = playerHand[playerHand.length - 1];
-          // 设置最近抽到的牌
-          set({ lastDrawnTile: lastTile });
-          
-          // 5秒后自动清除标记
-          setTimeout(() => {
-            set({ lastDrawnTile: null });
-          }, 5000);
-        }
-      }, 300);
-      
-      set({ loading: false });
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error.message,
-      });
-    }
-  },
-
-  // 打出牌
-  discardTile: async (roomId, tile) => {
-    set({ loading: true, error: null });
-    try {
-      await websocketService.discardTile(roomId, tile);
-      set({ loading: false });
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error.message,
-      });
-    }
-  },
-
-  // 拿取别人出的牌
-  takeTile: async (roomId, tile) => {
-    set({ loading: true, error: null });
-    try {
-      await websocketService.takeTile(roomId, tile);
-      set({ loading: false });
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error.message,
-      });
-    }
-  },
-
-  // 明牌
-  revealTiles: async (roomId, tiles) => {
-    set({ loading: true, error: null });
-    try {
-      await websocketService.revealTiles(roomId, tiles);
-      set({ loading: false });
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error.message,
-      });
-    }
-  },
-
-  // 暗牌（隐藏明牌）
-  hideTiles: async (roomId, tiles) => {
-    set({ loading: true, error: null });
-    try {
-      await websocketService.hideTiles(roomId, tiles);
-      set({ loading: false });
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error.message,
-      });
-    }
-  },
-
-  // 宣布胜利
-  claimWin: async (roomId) => {
-    set({ loading: true, error: null });
-    try {
-      await websocketService.claimWin(roomId);
-      set({ loading: false });
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error.message,
-      });
-    }
-  },
-
-  // 确认胜利
-  confirmWin: async (roomId, winnerEmail, confirm) => {
-    set({ loading: true, error: null });
-    try {
-      await websocketService.confirmWin(roomId, winnerEmail, confirm);
-      set({ loading: false });
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error.message,
-      });
-    }
-  },
-
-  // 通用牌排序方法
+  // 洗牌
   sortTiles: (tiles) => {
     if (!tiles || !Array.isArray(tiles) || tiles.length === 0) {
       return [];
@@ -539,19 +442,12 @@ export const useGameStore = create((set, get) => ({
     return groupsArray.flatMap(group => group.tiles);
   },
 
-  // 对手牌进行排序
-  sortPlayerHand: () => {
-    const { playerHand } = get();
-    const sortedHand = get().sortTiles(playerHand);
-    set({ playerHand: sortedHand });
-  },
-
   // 重置游戏状态
   resetGameState: () => {
     set({
       gameState: null,
       playerHand: [],
-      revealedTiles: [],
+      revealedTiles: {},
       playerHandCounts: {},
       discardPile: [],
       drawPileCount: 0,
@@ -560,10 +456,154 @@ export const useGameStore = create((set, get) => ({
       loading: false,
       error: null,
       tryCount: 0,
-      oneTimeListeners: [],
       winnerHandTiles: [],
       winnerRevealedTiles: [],
       lastDrawnTile: null
     });
+  },
+
+  // 抽牌
+  drawTile: async (roomId) => {
+    if (typeof mockGameStates !== 'undefined') {
+      // 演示版本直接返回成功
+      return true;
+    }
+    
+    try {
+      await websocketService.drawTile(roomId);
+      return true;
+    } catch (error) {
+      console.error('Error drawing tile:', error);
+      set({ error: `抽牌失败：${error.message}` });
+      return false;
+    }
+  },
+  
+  // 出牌
+  discardTile: async (roomId, tile) => {
+    if (typeof mockGameStates !== 'undefined') {
+      // 演示版本：直接从玩家手牌中移除该牌
+      const gameState = mockGameStates[roomId];
+      if (!gameState) return false;
+      
+      const playerEmail = currentUser.email;
+      gameState.hands[playerEmail] = gameState.hands[playerEmail].filter(t => t.id !== tile.id);
+      gameState.discardPile.push(tile);
+      
+      // 更新状态
+      const updatedPlayerHand = sortTiles(gameState.hands[playerEmail]);
+      set({
+        playerHand: updatedPlayerHand,
+        discardPile: gameState.discardPile
+      });
+      
+      return true;
+    }
+    
+    try {
+      await websocketService.discardTile(roomId, tile);
+      return true;
+    } catch (error) {
+      console.error('Error discarding tile:', error);
+      set({ error: `出牌失败：${error.message}` });
+      return false;
+    }
+  },
+  
+  // 拿牌
+  takeTile: async (roomId, tile) => {
+    if (typeof mockGameStates !== 'undefined') {
+      // 演示版本直接返回成功
+      return true;
+    }
+    
+    try {
+      await websocketService.takeTile(roomId, tile);
+      return true;
+    } catch (error) {
+      console.error('Error taking tile:', error);
+      set({ error: `拿牌失败：${error.message}` });
+      return false;
+    }
+  },
+  
+  // 显示牌
+  revealTiles: async (roomId, tiles) => {
+    if (typeof mockGameStates !== 'undefined') {
+      // 演示版本直接返回成功
+      return true;
+    }
+    
+    try {
+      await websocketService.revealTiles(roomId, tiles);
+      return true;
+    } catch (error) {
+      console.error('Error revealing tiles:', error);
+      set({ error: `显示牌失败：${error.message}` });
+      return false;
+    }
+  },
+  
+  // 隐藏牌
+  hideTiles: async (roomId, tiles) => {
+    if (typeof mockGameStates !== 'undefined') {
+      // 演示版本直接返回成功
+      return true;
+    }
+    
+    try {
+      await websocketService.hideTiles(roomId, tiles);
+      return true;
+    } catch (error) {
+      console.error('Error hiding tiles:', error);
+      set({ error: `隐藏牌失败：${error.message}` });
+      return false;
+    }
+  },
+  
+  // 胜利声明
+  claimWin: async (roomId) => {
+    if (typeof mockGameStates !== 'undefined') {
+      // 演示版本：设置自己为胜利者
+      const gameState = mockGameStates[roomId];
+      if (!gameState) return false;
+      
+      gameState.pendingWinner = currentUser.email;
+      set({ pendingWinner: currentUser.email });
+      return true;
+    }
+    
+    try {
+      await websocketService.claimWin(roomId);
+      return true;
+    } catch (error) {
+      console.error('Error claiming win:', error);
+      set({ error: `胜利声明失败：${error.message}` });
+      return false;
+    }
+  },
+  
+  // 确认胜利
+  confirmWin: async (roomId, winnerEmail, confirm) => {
+    if (typeof mockGameStates !== 'undefined') {
+      // 演示版本直接返回成功
+      return true;
+    }
+    
+    try {
+      await websocketService.confirmWin(roomId, winnerEmail, confirm);
+      return true;
+    } catch (error) {
+      console.error('Error confirming win:', error);
+      set({ error: `确认胜利失败：${error.message}` });
+      return false;
+    }
+  },
+
+  // 对手牌进行排序
+  sortPlayerHand: () => {
+    const { playerHand } = get();
+    const sortedHand = get().sortTiles(playerHand);
+    set({ playerHand: sortedHand });
   },
 })); 
