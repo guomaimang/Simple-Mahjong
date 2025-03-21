@@ -1,6 +1,6 @@
 # Simple-Mahjong
 
-一个基于内存的麻将对战系统，允许用户创建房间、加入房间并进行麻将游戏。
+一个基于内存的 Web 麻将对战系统，允许用户创建房间、加入房间并进行麻将游戏。
 
 ![版本](https://img.shields.io/badge/版本-0.1.0-blue)
 ![协议](https://img.shields.io/badge/协议-GPL--3.0-green)
