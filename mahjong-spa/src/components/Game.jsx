@@ -46,6 +46,7 @@ const Game = () => {
   const [draggedTile, setDraggedTile] = useState(null);
   const [dragSource, setDragSource] = useState(null);
   const [showClaimWinConfirmation, setShowClaimWinConfirmation] = useState(false);
+  const [websocketConnected, setWebsocketConnected] = useState(websocketService.isConnected());
 
   // 初始化游戏
   useEffect(() => {
@@ -153,6 +154,25 @@ const Game = () => {
       console.log('不显示胜利确认对话框，原因:', !pendingWinner ? '没有声明胜利者' : '当前用户是声明胜利者');
     }
   }, [pendingWinner, user.email]);
+
+  // 监听WebSocket连接状态
+  useEffect(() => {
+    // 定义一个检查WebSocket连接状态的函数
+    const checkConnection = () => {
+      const isConnected = websocketService.isConnected();
+      setWebsocketConnected(isConnected);
+    };
+    
+    // 初始检查
+    checkConnection();
+    
+    // 设置定时器定期检查连接状态
+    const connectionCheckInterval = setInterval(checkConnection, 2000);
+    
+    return () => {
+      clearInterval(connectionCheckInterval);
+    };
+  }, []);
 
   // 处理牌的选择
   const handleTileSelect = (tile) => {
@@ -1288,10 +1308,12 @@ const Game = () => {
       {renderGameEnd()}
 
       {/* 显示加载提示气泡 */}
-      {loading && (
+      {(loading || !websocketConnected) && (
         <div className="loading-toast">
           <div className="toast-spinner"></div>
-          <div className="toast-message">正在加载游戏状态...</div>
+          <div className="toast-message">
+            {loading ? '正在加载游戏状态...' : '正在重新连接服务器...'}
+          </div>
         </div>
       )}
     </div>
