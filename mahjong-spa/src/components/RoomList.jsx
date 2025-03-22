@@ -107,12 +107,7 @@ const RoomList = () => {
 
       <div className="room-list">
         <h2>可用房间</h2>
-        {loading ? (
-          <div className="loading-inline">
-            <div className="loading-spinner"></div>
-            <span>加载中...</span>
-          </div>
-        ) : rooms.length === 0 ? (
+        {rooms.length === 0 && !loading ? (
           <div className="no-rooms">暂无可用房间</div>
         ) : (
           <table className="rooms-table">
@@ -154,6 +149,14 @@ const RoomList = () => {
           </table>
         )}
       </div>
+
+      {/* 右下角加载提示气泡 */}
+      {loading && (
+        <div className="loading-toast right-bottom">
+          <div className="toast-spinner"></div>
+          <div className="toast-message">正在加载房间列表...</div>
+        </div>
+      )}
 
       <NicknameModal 
         isOpen={isNicknameModalOpen} 

@@ -168,6 +168,14 @@ const Room = () => {
     navigate('/rooms');
   };
 
+  const handleEnterGame = () => {
+    navigate(`/rooms/${roomId}/game`);
+  };
+
+  const handleRefreshRoom = () => {
+    fetchRoom(roomId);
+  };
+
   const formatTime = (timeString) => {
     if (!timeString) return '';
     const date = new Date(timeString);
@@ -190,21 +198,6 @@ const Room = () => {
     return `${hours}小时${minutes}分钟`;
   };
 
-  if (loading) {
-    return (
-      <div className="room-container">
-        <header className="room-header">
-          <h1>房间加载中...</h1>
-          <button onClick={() => navigate('/rooms')}>返回房间列表</button>
-        </header>
-        <div className="loading-inline">
-          <div className="loading-spinner"></div>
-          <span>加载房间信息...</span>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="error-container">
@@ -220,7 +213,7 @@ const Room = () => {
     );
   }
 
-  if (!currentRoom) {
+  if (!loading && !currentRoom) {
     return (
       <div className="error-container">
         <div className="error-card">
@@ -237,93 +230,149 @@ const Room = () => {
     );
   }
 
-  const isCreator = user.email === currentRoom.creatorEmail;
-  const canStartGame = isCreator && currentRoom.status === 'WAITING' && players.length >= 2;
+  const isCreator = user.email === currentRoom?.creatorEmail;
+  const canStartGame = isCreator && currentRoom?.status === 'WAITING' && players.length >= 2;
 
   return (
     <div className="room-container">
       <header className="room-header">
-        <h1>房间 #{currentRoom.roomId}</h1>
-        <button onClick={handleLeaveRoom}>返回房间列表</button>
+        <h1>房间 #{roomId}</h1>
+        <div className="header-actions">
+          <button onClick={handleRefreshRoom} title="刷新房间信息">
+            <span className="refresh-icon">⟳</span>
+          </button>
+          <button onClick={() => navigate('/rooms')}>返回房间列表</button>
+        </div>
       </header>
 
-      <div className="room-info">
-        <div className="room-details">
-          <p><strong>房间号:</strong> {currentRoom.roomId}</p>
-          <p><strong>创建者:</strong> {players.find(p => p.email === currentRoom.creatorEmail)?.nickname || currentRoom.creatorEmail}</p>
-          <p><strong>创建时间:</strong> {formatTime(currentRoom.creationTime)}</p>
-          <p><strong>剩余时间:</strong> {calculateTimeLeft(currentRoom.creationTime)}</p>
-          <p><strong>状态:</strong> {currentRoom.status === 'WAITING' ? '等待中' : '游戏中'}</p>
-          {hasJoined && isCreator && <p><strong>密码:</strong> {currentRoom.password}</p>}
+      {loading && !currentRoom ? (
+        <div className="loading-content">
+          <p>正在加载房间信息，请稍候...</p>
         </div>
-
-        {!hasJoined ? (
-          <div className="join-section">
+      ) : !hasJoined && currentRoom?.status === 'WAITING' ? (
+        <div className="join-section">
+          <h2>加入房间</h2>
+          <div className="join-form">
             <input
               type="password"
-              placeholder="输入房间密码"
+              placeholder="输入房间密码（如果有）"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
             <button onClick={handleJoinRoom}>加入房间</button>
           </div>
-        ) : (
-          <div className="action-buttons">
-            {canStartGame && (
-              <button 
-                className="start-game-button" 
-                onClick={handleStartGame}
-              >
-                开始游戏
-              </button>
+        </div>
+      ) : (
+        currentRoom && (
+          <>
+            <div className="room-info">
+              <div className="info-card">
+                <span className="info-label">状态:</span>
+                <span className="info-value">
+                  {currentRoom.status === 'WAITING' ? '等待中' : 
+                   currentRoom.status === 'PLAYING' ? '游戏中' : '已结束'}
+                </span>
+              </div>
+              <div className="info-card">
+                <span className="info-label">创建者:</span>
+                <span className="info-value">{currentRoom.creatorEmail}</span>
+              </div>
+              <div className="info-card">
+                <span className="info-label">创建于:</span>
+                <span className="info-value">{formatTime(currentRoom.creationTime)}</span>
+              </div>
+              <div className="info-card">
+                <span className="info-label">剩余时间:</span>
+                <span className="info-value">{calculateTimeLeft(currentRoom.creationTime)}</span>
+              </div>
+              {hasJoined && isCreator && (
+                <div className="info-card password-info">
+                  <span className="info-label">密码:</span>
+                  <span className="info-value password-value">{currentRoom.password || '无'}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="players-section">
+              <h2>玩家列表</h2>
+              <div className="players-grid">
+                {Array.from({ length: 4 }).map((_, index) => {
+                  const player = players[index];
+                  return (
+                    <div 
+                      key={index} 
+                      className={`player-card ${!player ? 'empty' : ''}`}
+                    >
+                      {player ? (
+                        <>
+                          <div className="player-avatar">
+                            {player.nickname ? player.nickname[0].toUpperCase() : '?'}
+                          </div>
+                          <div className="player-info">
+                            <p className="player-nickname">{player.nickname || '未设置昵称'}</p>
+                            <p className="player-email">{player.email}</p>
+                          </div>
+                          {player.email === currentRoom.creatorEmail && (
+                            <div className="creator-badge">房主</div>
+                          )}
+                        </>
+                      ) : (
+                        <span>等待玩家加入...</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {systemMessages.length > 0 && (
+              <div className="system-messages">
+                <h2>系统消息</h2>
+                <div className="messages-container">
+                  {systemMessages.map((msg, index) => (
+                    <div key={index} className="system-message">
+                      {msg}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
-        )}
-      </div>
 
-      <div className="players-section">
-        <h2>玩家列表</h2>
-        <div className="players-grid">
-          {Array.from({ length: 4 }).map((_, index) => {
-            const player = players[index];
-            return (
-              <div key={index} className={`player-card ${player ? 'occupied' : 'empty'}`}>
-                {player ? (
-                  <>
-                    <div className="player-avatar">
-                      {player.nickname?.charAt(0) || player.email.charAt(0)}
-                    </div>
-                    <div className="player-info">
-                      <p className="player-nickname">{player.nickname || '未设置昵称'}</p>
-                      <p className="player-email">{player.email}</p>
-                    </div>
-                    {player.email === currentRoom.creatorEmail && (
-                      <div className="creator-badge">房主</div>
-                    )}
-                  </>
-                ) : (
-                  <div className="empty-slot">等待玩家加入...</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+            <div className="room-actions">
+              {currentRoom.status === 'WAITING' && (
+                <>
+                  {isCreator && (
+                    <button 
+                      className="start-button"
+                      onClick={handleStartGame}
+                      disabled={!canStartGame}
+                      title={!canStartGame ? "至少需要2名玩家才能开始游戏" : ""}
+                    >
+                      开始游戏
+                    </button>
+                  )}
+                </>
+              )}
+              {currentRoom.status === 'PLAYING' && (
+                <button 
+                  className="enter-game-button"
+                  onClick={handleEnterGame}
+                >
+                  进入游戏
+                </button>
+              )}
+            </div>
+          </>
+        )
+      )}
 
-      <div className="system-messages">
-        <h2>系统消息</h2>
-        <div className="messages-container">
-          {systemMessages.length === 0 ? (
-            <p>暂无系统消息</p>
-          ) : (
-            systemMessages.map((message, index) => (
-              <div key={index} className="system-message">
-                {message}
-              </div>
-            ))
-          )}
+      {/* 右下角加载提示气泡 */}
+      {loading && (
+        <div className="loading-toast right-bottom">
+          <div className="toast-spinner"></div>
+          <div className="toast-message">正在加载房间信息...</div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

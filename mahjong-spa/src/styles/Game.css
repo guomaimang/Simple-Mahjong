@@ -613,9 +613,7 @@
 }
 
 .claim-win-button:hover {
-  background-color: #F57C00 !important; /* 深橙色 */
-  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
-  transform: translateY(-2px);
+  background-color: #b54444;
 }
 
 /* 确认和取消按钮样式改进 */
@@ -1226,6 +1224,12 @@
   max-width: 300px;
 }
 
+/* 右下角气泡样式 */
+.loading-toast.right-bottom {
+  left: auto;
+  right: 20px;
+}
+
 .loading-toast .toast-spinner {
   display: inline-block;
   width: 20px;
@@ -1244,4 +1248,14 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.sort-hand-button {
+  background-color: #4682B4;
+  color: white;
+  transition: background-color 0.3s;
+}
+
+.sort-hand-button:hover {
+  background-color: #366994;
 } 

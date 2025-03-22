@@ -35,7 +35,9 @@ const Game = () => {
     resetGameState,
     winnerHandTiles,
     winnerRevealedTiles,
-    lastDrawnTile
+    lastDrawnTile,
+    sortTiles,
+    sortPlayerHand
   } = useGameStore();
 
   const [selectedTiles, setSelectedTiles] = useState([]);
@@ -786,6 +788,14 @@ const Game = () => {
     );
   };
 
+  // 处理手牌排序
+  const handleSortHand = () => {
+    if (!playerHand || playerHand.length === 0) return;
+    
+    // 使用gameStore中的排序手牌方法
+    sortPlayerHand();
+  };
+
   // 渲染操作按钮
   const renderActionButtons = () => {
     return (
@@ -802,6 +812,12 @@ const Game = () => {
             onClick={handleClaimWinClick}
           >
             宣布胜利
+          </button>
+          <button 
+            className="sort-hand-button"
+            onClick={handleSortHand}
+          >
+            排序手牌
           </button>
         </div>
         
@@ -1270,7 +1286,7 @@ const Game = () => {
         </div>
       );
     }
-    // 如果有游戏状态，则继续显示游戏界面，并在左下角显示加载提示
+    // 如果有游戏状态，则继续显示游戏界面，并在右下角显示加载提示
   }
 
   if (error) {
@@ -1307,9 +1323,9 @@ const Game = () => {
       {renderClaimWinConfirmation()}
       {renderGameEnd()}
 
-      {/* 显示加载提示气泡 */}
+      {/* 显示加载提示气泡，修改为右下角显示 */}
       {(loading || !websocketConnected) && (
-        <div className="loading-toast">
+        <div className="loading-toast right-bottom">
           <div className="toast-spinner"></div>
           <div className="toast-message">
             {loading ? '正在加载游戏状态...' : '正在重新连接服务器...'}
