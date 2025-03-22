@@ -108,7 +108,10 @@ const RoomList = () => {
       <div className="room-list">
         <h2>可用房间</h2>
         {loading ? (
-          <div className="loading">加载中...</div>
+          <div className="loading-inline">
+            <div className="loading-spinner"></div>
+            <span>加载中...</span>
+          </div>
         ) : rooms.length === 0 ? (
           <div className="no-rooms">暂无可用房间</div>
         ) : (

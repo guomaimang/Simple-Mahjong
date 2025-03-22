@@ -65,20 +65,15 @@ export const useGameStore = create((set, get) => ({
         if (!gameState.roomId) {
           gameState.roomId = roomId;
         }
-        
-        // 对玩家手牌进行排序
-        const sortedPlayerHand = get().sortTiles(playerHand);
-        
         // 对所有玩家的明牌进行排序
         const sortedRevealedTiles = {};
         Object.keys(revealedTiles).forEach(email => {
           sortedRevealedTiles[email] = get().sortTiles(revealedTiles[email]);
         });
-        
         set({
           gameState,
-          playerHand: sortedPlayerHand, // 使用排序后的手牌
-          revealedTiles: sortedRevealedTiles, // 使用排序后的明牌
+          playerHand: playerHand, // 直接使用未排序的手牌
+          revealedTiles: revealedTiles, // 直接使用未排序的明牌
           playerHandCounts,
           discardPile,
           drawPileCount,

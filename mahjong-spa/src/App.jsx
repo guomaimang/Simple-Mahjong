@@ -20,27 +20,25 @@ function App() {
     initAuth();
   }, [initialize]);
 
-  if (loading) {
-    return (
-      <div className="loading">
-        <div className="loading-content">
-          <div className="loading-spinner"></div>
-          <p>正在加载麻将对战系统...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <Router>
       <Routes>
-        <Route path="/" element={isAuthenticated ? <Navigate to="/rooms" /> : <Login />} />
-        <Route path="/rooms" element={isAuthenticated ? <RoomList /> : <Navigate to="/" />} />
-        <Route path="/rooms/:roomId" element={isAuthenticated ? <Room /> : <Navigate to="/" />} />
-        <Route path="/rooms/:roomId/game" element={isAuthenticated ? <Game /> : <Navigate to="/" />} />
+        <Route path="/" element={loading ? <LoadingIndicator /> : (isAuthenticated ? <Navigate to="/rooms" /> : <Login />)} />
+        <Route path="/rooms" element={loading ? <LoadingIndicator /> : (isAuthenticated ? <RoomList /> : <Navigate to="/" />)} />
+        <Route path="/rooms/:roomId" element={loading ? <LoadingIndicator /> : (isAuthenticated ? <Room /> : <Navigate to="/" />)} />
+        <Route path="/rooms/:roomId/game" element={loading ? <LoadingIndicator /> : (isAuthenticated ? <Game /> : <Navigate to="/" />)} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
+  );
+}
+
+// 内联加载指示器组件，仅在当前视图中显示加载状态
+function LoadingIndicator() {
+  return (
+    <div className="inline-loading">
+      <div className="loading-spinner"></div>
+    </div>
   );
 }
 

@@ -812,7 +812,7 @@ const Game = () => {
 
   // 渲染胜利确认对话框
   const renderWinConfirmation = () => {
-    if (!showWinConfirmation) return null;
+    if (!showWinConfirmation || !gameState) return null;
 
     // 从gameStore获取胜利者的牌信息
     const { winnerHandTiles, winnerRevealedTiles } = useGameStore.getState();
@@ -886,7 +886,7 @@ const Game = () => {
 
   // 渲染宣布胜利确认模态框
   const renderClaimWinConfirmation = () => {
-    if (!showClaimWinConfirmation) return null;
+    if (!showClaimWinConfirmation || !gameState) return null;
 
     return (
       <div className="win-confirmation-overlay">
@@ -986,6 +986,8 @@ const Game = () => {
 
   // 渲染玩家手牌
   const renderPlayerHand = () => {
+    if (!gameState) return null;
+    
     const handleDragStart = (e, index) => {
       e.dataTransfer.setData('text/plain', index);
       setDraggedTileIndex(index);
@@ -1071,7 +1073,7 @@ const Game = () => {
         <div className="player-self-info">
           <div className="player-name">
             <span>{getPlayerDisplayName(user.email)}</span>
-            {user.email === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
+            {gameState && user.email === gameState.dealerEmail && <span className="dealer-badge">庄家</span>}
             <span className="tile-count-badge">({totalTilesCount})</span>
           </div>
         </div>
@@ -1230,14 +1232,25 @@ const Game = () => {
   };
 
   if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-message">
-          <h2>正在加载游戏状态...</h2>
-          <p>如果长时间无响应，请<button onClick={() => window.location.reload()}>刷新页面</button>重试</p>
+    // 不再返回全屏loading，而是在后面的渲染中处理加载状态
+    // 如果没有游戏状态，还是显示加载页面
+    if (!gameState) {
+      return (
+        <div className="game-container">
+          <header className="game-header">
+            <h1>房间 #{roomId} - 游戏加载中</h1>
+            <button onClick={handleBackToHome}>返回首页</button>
+          </header>
+          
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <p>正在加载游戏状态...</p>
+            <p>如果长时间无响应，请<button className="text-button" onClick={() => window.location.reload()}>刷新页面</button>重试</p>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+    // 如果有游戏状态，则继续显示游戏界面，并在左下角显示加载提示
   }
 
   if (error) {
@@ -1256,18 +1269,6 @@ const Game = () => {
     );
   }
 
-  if (!gameState) {
-    return (
-      <div className="loading-container">
-        <div className="loading-message">
-          <h2>正在加载游戏状态...</h2>
-          <p>如果长时间无响应，请<button onClick={() => window.location.reload()}>刷新页面</button>重试</p>
-          <p>或者尝试<button onClick={handleBackToHome}>返回首页</button>后重新进入游戏</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="game-container">
       <header className="game-header">
@@ -1276,15 +1277,23 @@ const Game = () => {
       </header>
 
       <div className="game-table">
-        {renderOtherPlayers()}
-        {renderTableCenter()}
-        {renderPlayerHand()}
-        {renderActionButtons()}
+        {gameState && renderOtherPlayers()}
+        {gameState && renderTableCenter()}
+        {gameState && renderPlayerHand()}
+        {gameState && renderActionButtons()}
       </div>
 
       {renderWinConfirmation()}
       {renderClaimWinConfirmation()}
       {renderGameEnd()}
+
+      {/* 显示加载提示气泡 */}
+      {loading && (
+        <div className="loading-toast">
+          <div className="toast-spinner"></div>
+          <div className="toast-message">正在加载游戏状态...</div>
+        </div>
+      )}
     </div>
   );
 };

@@ -191,7 +191,18 @@ const Room = () => {
   };
 
   if (loading) {
-    return <div className="loading">加载中...</div>;
+    return (
+      <div className="room-container">
+        <header className="room-header">
+          <h1>房间加载中...</h1>
+          <button onClick={() => navigate('/rooms')}>返回房间列表</button>
+        </header>
+        <div className="loading-inline">
+          <div className="loading-spinner"></div>
+          <span>加载房间信息...</span>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
