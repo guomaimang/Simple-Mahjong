@@ -37,7 +37,7 @@ export const useGameStore = create((set, get) => ({
       try {
         // 处理可能的不同数据结构
         const gameState = data.gameState || data;
-        const playerHand = data.hand || data.playerHand || [];
+        const newPlayerHand = data.hand || data.playerHand || [];
         const revealedTiles = data.revealedTiles || {};
         const discardPile = data.discardPile || [];
         const drawPileCount = data.remainingTiles || data.drawPileCount || 0;
@@ -55,7 +55,7 @@ export const useGameStore = create((set, get) => ({
         
         console.log('Parsed game state data:', { 
           gameState, 
-          handSize: playerHand.length, 
+          handSize: newPlayerHand.length, 
           discardPileSize: discardPile.length,
           drawPileCount,
           playerHandCounts
@@ -65,15 +65,32 @@ export const useGameStore = create((set, get) => ({
         if (!gameState.roomId) {
           gameState.roomId = roomId;
         }
+        
         // 对所有玩家的明牌进行排序
         const sortedRevealedTiles = {};
         Object.keys(revealedTiles).forEach(email => {
           sortedRevealedTiles[email] = get().sortTiles(revealedTiles[email]);
         });
+        
+        // 保留用户当前手牌的排序，只添加新的牌
+        const currentPlayerHand = get().playerHand;
+        let updatedPlayerHand = [...currentPlayerHand];
+        
+        // 检查是否有新牌，通过比对ID来确定
+        const currentIds = new Set(currentPlayerHand.map(tile => tile.id));
+        const newTiles = newPlayerHand.filter(tile => !currentIds.has(tile.id));
+        
+        // 从当前手牌中移除不存在于新手牌中的牌（例如已打出的牌）
+        const newIds = new Set(newPlayerHand.map(tile => tile.id));
+        updatedPlayerHand = updatedPlayerHand.filter(tile => newIds.has(tile.id));
+        
+        // 将新牌添加到手牌末尾
+        updatedPlayerHand = [...updatedPlayerHand, ...newTiles];
+        
         set({
           gameState,
-          playerHand: playerHand, // 直接使用未排序的手牌
-          revealedTiles: revealedTiles, // 直接使用未排序的明牌
+          playerHand: updatedPlayerHand, // 使用保留排序的手牌
+          revealedTiles: revealedTiles,
           playerHandCounts,
           discardPile,
           drawPileCount,
@@ -389,13 +406,14 @@ export const useGameStore = create((set, get) => ({
       setTimeout(() => {
         // 检查玩家手牌是否有更新
         const { playerHand } = get();
-        // 查找刚刚抽到的牌（最后一张牌）
+        
+        // 查找刚刚抽到的牌（应该是最后一张牌，因为我们修改了更新逻辑）
         if (playerHand.length > 0) {
           const lastTile = playerHand[playerHand.length - 1];
           // 设置最近抽到的牌
           set({ lastDrawnTile: lastTile });
           
-          // 5秒后自动清除标记
+          // 在界面上高亮显示这张牌 5 秒
           setTimeout(() => {
             set({ lastDrawnTile: null });
           }, 5000);
