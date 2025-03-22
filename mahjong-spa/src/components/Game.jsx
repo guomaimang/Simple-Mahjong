@@ -35,9 +35,7 @@ const Game = () => {
     resetGameState,
     winnerHandTiles,
     winnerRevealedTiles,
-    lastDrawnTile,
-    sortTiles,
-    sortPlayerHand
+    lastDrawnTile
   } = useGameStore();
 
   const [selectedTiles, setSelectedTiles] = useState([]);
@@ -788,14 +786,6 @@ const Game = () => {
     );
   };
 
-  // 处理手牌排序
-  const handleSortHand = () => {
-    if (!playerHand || playerHand.length === 0) return;
-    
-    // 使用gameStore中的排序手牌方法
-    sortPlayerHand();
-  };
-
   // 渲染操作按钮
   const renderActionButtons = () => {
     return (
@@ -812,12 +802,6 @@ const Game = () => {
             onClick={handleClaimWinClick}
           >
             宣布胜利
-          </button>
-          <button 
-            className="sort-hand-button"
-            onClick={handleSortHand}
-          >
-            排序手牌
           </button>
         </div>
         

@@ -72,25 +72,24 @@ export const useGameStore = create((set, get) => ({
           sortedRevealedTiles[email] = get().sortTiles(revealedTiles[email]);
         });
         
-        // 保留用户当前手牌的排序，只添加新的牌
+        // 检查是否有新牌，保存最后一张牌作为lastDrawnTile
+        let lastDrawn = null;
         const currentPlayerHand = get().playerHand;
-        let updatedPlayerHand = [...currentPlayerHand];
-        
-        // 检查是否有新牌，通过比对ID来确定
         const currentIds = new Set(currentPlayerHand.map(tile => tile.id));
         const newTiles = newPlayerHand.filter(tile => !currentIds.has(tile.id));
         
-        // 从当前手牌中移除不存在于新手牌中的牌（例如已打出的牌）
-        const newIds = new Set(newPlayerHand.map(tile => tile.id));
-        updatedPlayerHand = updatedPlayerHand.filter(tile => newIds.has(tile.id));
+        // 如果有新牌，设置最后一张为lastDrawnTile
+        if (newTiles.length > 0) {
+          lastDrawn = newTiles[newTiles.length - 1];
+        }
         
-        // 将新牌添加到手牌末尾
-        updatedPlayerHand = [...updatedPlayerHand, ...newTiles];
+        // 对所有手牌进行排序
+        const sortedPlayerHand = get().sortTiles(newPlayerHand);
         
         set({
           gameState,
-          playerHand: updatedPlayerHand, // 使用保留排序的手牌
-          revealedTiles: revealedTiles,
+          playerHand: sortedPlayerHand, // 使用排序后的手牌
+          revealedTiles: sortedRevealedTiles, // 使用排序后的明牌
           playerHandCounts,
           discardPile,
           drawPileCount,
@@ -99,6 +98,20 @@ export const useGameStore = create((set, get) => ({
           error: null,
           tryCount: 0
         });
+        
+        // 如果有新抽的牌，设置lastDrawnTile
+        if (lastDrawn) {
+          set({ lastDrawnTile: lastDrawn });
+          
+          // 在5秒后清除lastDrawnTile
+          setTimeout(() => {
+            // 确保lastDrawnTile仍然是同一张牌时才清除
+            const currentState = get();
+            if (currentState.lastDrawnTile && currentState.lastDrawnTile.id === lastDrawn.id) {
+              set({ lastDrawnTile: null });
+            }
+          }, 5000);
+        }
         
         // 如果游戏状态中包含pendingWinner，更新pendingWinner状态
         if (pendingWinnerFromState) {
@@ -402,24 +415,7 @@ export const useGameStore = create((set, get) => ({
       // 只能抽一张牌
       const response = await websocketService.drawTile(roomId);
       
-      // 等待一小段时间，确保游戏状态已更新
-      setTimeout(() => {
-        // 检查玩家手牌是否有更新
-        const { playerHand } = get();
-        
-        // 查找刚刚抽到的牌（应该是最后一张牌，因为我们修改了更新逻辑）
-        if (playerHand.length > 0) {
-          const lastTile = playerHand[playerHand.length - 1];
-          // 设置最近抽到的牌
-          set({ lastDrawnTile: lastTile });
-          
-          // 在界面上高亮显示这张牌 5 秒
-          setTimeout(() => {
-            set({ lastDrawnTile: null });
-          }, 5000);
-        }
-      }, 300);
-      
+      // 游戏状态会由服务器推送更新，lastDrawnTile会在GAME_STATE监听器中设置
       set({ loading: false });
     } catch (error) {
       set({ 
