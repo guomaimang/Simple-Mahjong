@@ -76,6 +76,12 @@ npm run build
 pnpm build
 ```
 
+### Docker 指南
+
+```
+docker run -p 3130:8080 --name simple-mahjong -e JWT_SECRET=xxxxxx -e FRONTEND_URL=https://xxx.com -e SERVER_URL=https://api.xxx.com -e GITHUB_CLIENT_ID=xxx -e GITHUB_CLIENT_SECRET=xxx -e TZ=Asia/Shanghai -d hanjiaming/simple-mahjong:v0.0.4
+```
+
 ## 使用指南
 
 1. 启动后端服务器
