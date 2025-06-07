@@ -124,6 +124,4 @@ docker run -p 3130:8080 --name simple-mahjong -e JWT_SECRET=xxxxxx -e FRONTEND_U
 
 欢迎提交Pull Request或Issue来改进项目。
 
-## 许可证
-
-本项目采用[GNU通用公共许可证v3.0](LICENSE)。
+ 
